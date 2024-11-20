@@ -8,12 +8,16 @@ void reshape(int width, int height) {
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (float)width / height, 1.0, 100.0);
+    // Adjusted field of view and view distance for better chase camera view
+    gluPerspective(45.0, (float)width / height, 0.1, 100.0);
     glMatrixMode(GL_MODELVIEW);
 }
 
 void update(int value) {
-    UpdateBullets();
+    // Update ship state and movement
+    updateMovement();
+    UpdateShipState();
+    
     glutPostRedisplay();
     glutTimerFunc(16, update, 0);  // 60 FPS timing
 }
@@ -22,16 +26,24 @@ int main(int argc, char **argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
-    glutCreateWindow("3D Battleship");
+    glutCreateWindow("3D Battleship Flight Sim");
 
+    // Initialize OpenGL settings
     glEnable(GL_DEPTH_TEST);
-    initStars();  // Initialize star positions
+    glEnable(GL_POINT_SMOOTH);  // Smooth star points
+    glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+    glPointSize(1.0); 
 
+    // Initialize game components
+    initStars();
+    initializeInput();
+
+    // Set up display callbacks
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
-    initializeInput();
-    glutIdleFunc(idle);     // Keep stars twinkling
-    glutTimerFunc(0, update, 0);  // Start update loop
+    glutIdleFunc(idle);
+    glutTimerFunc(0, update, 0);
+
     glutMainLoop();
     return 0;
 }

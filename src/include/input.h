@@ -3,21 +3,20 @@
 
 // Key states for continuous movement
 typedef struct {
-    int upPressed;
-    int downPressed;
-    int leftPressed;
-    int rightPressed;
+    int upPressed;      // Up arrow key state
+    int downPressed;    // Down arrow key state
+    int leftPressed;    // Left arrow key state
+    int rightPressed;   // Right arrow key state
 } KeyStates;
 
 extern KeyStates keyStates;
-extern float cameraAngle;  // Defined in display.c
 
 // Function declarations
-void key(unsigned char ch, int x, int y);
-void keyUp(unsigned char ch, int x, int y);
-void specialKey(int key, int x, int y);
-void specialKeyUp(int key, int x, int y);
-void updateMovement(void);
-void initializeInput(void);
+void key(unsigned char ch, int x, int y);           // Regular key press
+void keyUp(unsigned char ch, int x, int y);         // Regular key release
+void specialKey(int key, int x, int y);            // Special key press (arrows)
+void specialKeyUp(int key, int x, int y);          // Special key release (arrows)
+void updateMovement(void);                         // Update ship position based on keys
+void initializeInput(void);                        // Initialize input callbacks
 
-#endif 
+#endif

@@ -1,10 +1,12 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-void displayStars();
-void updateStarBrightness();
+void display(void);
+void reshape(int width, int height);
+void update(int value);
 void drawAxes();
-void display();
-void idle();
+void updateStarBrightness();
+void displayStars();
+void idle(void);
 
 #endif

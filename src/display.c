@@ -3,9 +3,7 @@
 #include "include/display.h"
 #include "include/init.h"
 #include "include/battleship.h"
-
-// Global camera angle for rotation
-float cameraAngle = 0.0f;
+#include "include/input.h"
 
 void drawAxes() {
     glBegin(GL_LINES);
@@ -37,12 +35,13 @@ void drawAxes() {
 }
 
 void updateStarBrightness() {
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < NUM_STARS; i++) {
         // Oscillate brightness using a sine wave for a smooth twinkle effect
         stars[i].brightness += stars[i].twinkleSpeed;
         
-        if (stars[i].brightness > 1.0f || stars[i].brightness < 0.3f) {
-            stars[i].twinkleSpeed = -stars[i].twinkleSpeed;  // Reverse direction when reaching limits
+        // Reduced brightness range
+        if (stars[i].brightness > 0.7f || stars[i].brightness < 0.3f) {
+            stars[i].twinkleSpeed = -stars[i].twinkleSpeed;
         }
     }
 }
@@ -60,30 +59,61 @@ void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    // Set the camera's orbit around the battleship
-    float camX = 5.0f * sinf(cameraAngle);
-    float camZ = 5.0f * cosf(cameraAngle);
-    gluLookAt(camX, 2.0, camZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    // Set up chase camera
+    SetupCamera();
 
-    // // Draw XYZ Axes
-    // glPushMatrix();
-    // drawAxes();
-    // glPopMatrix();
+    // Regenerate stars based on ship position
+    regenerateStarField(shipState.x, shipState.y, shipState.z);
 
     // Draw Stars
     glPushMatrix();
-    displayStars();  // Display background stars
+    glPointSize(1.0);  // Keep stars small
+    glEnable(GL_POINT_SMOOTH);  // Enable point smoothing
+    glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+    
+    glBegin(GL_POINTS);
+    for (int i = 0; i < NUM_STARS; i++) {
+        float distToShip = sqrt(
+            pow(stars[i].x - shipState.x, 2) +
+            pow(stars[i].y - shipState.y, 2) +
+            pow(stars[i].z - shipState.z, 2)
+        );
+        
+        // Fade stars based on distance
+        float fadeScale = 1.0f - (distToShip / STAR_VIEW_DISTANCE);
+        if (fadeScale > 0) {
+            glColor3f(stars[i].brightness * fadeScale, 
+                     stars[i].brightness * fadeScale, 
+                     stars[i].brightness * fadeScale);
+            glVertex3f(stars[i].x, stars[i].y, stars[i].z);
+        }
+    }
+    glEnd();
+    
+    glDisable(GL_POINT_SMOOTH);
     glPopMatrix();
 
     // Draw Battleship
     glPushMatrix();
-    drawBattleship(0, 0, 0, 0.5, 1);
+    drawBattleship();
     glPopMatrix();
+
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (bullets[i].active) {
+            DrawBullet(bullets[i].x, bullets[i].y, bullets[i].z);
+        }
+    }
 
     glutSwapBuffers();
 }
 
 void idle() {
-    updateStarBrightness();  // Keep stars twinkling
+    // Update star twinkling
+    updateStarBrightness();
+
+    // Update ship state (handles automatic pitch/roll returns)
+    UpdateShipState();
+
+    // Request display update
     glutPostRedisplay();
 }
