@@ -43,33 +43,39 @@ void Vertex(double th, double ph) {
 }
 
 void Sphere(double x, double y, double z, double radius) {
-    const int d = 5;
+    const int stacks = 40;  // Increase detail level
+    const int slices = 40;
+    
     glPushMatrix();
-    glTranslatef(x, y, z);
-    glScalef(radius, radius, radius);
-
-    glBegin(GL_TRIANGLE_FAN);
-    Vertex(0, -90);
-    for (int th = 0; th <= 360; th += d) {
-        Vertex(th, d - 90);
-    }
-    glEnd();
-
-    for (int ph = d - 90; ph <= 90 - 2 * d; ph += d) {
+    glTranslated(x, y, z);
+    glScaled(radius, radius, radius);
+    
+    for(int i = 0; i < stacks; i++) {
+        double lat0 = M_PI * (-0.5 + (double)i / stacks);
+        double z0 = sin(lat0);
+        double zr0 = cos(lat0);
+        
+        double lat1 = M_PI * (-0.5 + (double)(i + 1) / stacks);
+        double z1 = sin(lat1);
+        double zr1 = cos(lat1);
+        
         glBegin(GL_QUAD_STRIP);
-        for (int th = 0; th <= 360; th += d) {
-            Vertex(th, ph);
-            Vertex(th, ph + d);
+        for(int j = 0; j <= slices; j++) {
+            double lng = 2 * M_PI * (double)j / slices;
+            double x = cos(lng);
+            double y = sin(lng);
+            
+            // Normal vector for proper lighting
+            glNormal3d(x * zr0, y * zr0, z0);
+            glVertex3d(x * zr0, y * zr0, z0);
+            
+            // Normal vector for next vertex
+            glNormal3d(x * zr1, y * zr1, z1);
+            glVertex3d(x * zr1, y * zr1, z1);
         }
         glEnd();
     }
-
-    glBegin(GL_TRIANGLE_FAN);
-    Vertex(0, 90);
-    for (int th = 0; th <= 360; th += d) {
-        Vertex(th, 90 - d);
-    }
-    glEnd();
+    
     glPopMatrix();
 }
 

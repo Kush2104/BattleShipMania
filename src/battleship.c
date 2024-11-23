@@ -5,7 +5,18 @@
 
 // Global variables
 Bullet bullets[MAX_BULLETS] = {0};
-ShipState shipState = {0};
+ShipState shipState = {
+    .x = SHIP_START_X,  // Start at a safe distance from the sun
+    .y = 0,            // On the orbital plane
+    .z = SHIP_START_Z, // Offset to see both sun and Earth
+    .yaw = 45,         // Face towards the sun
+    .pitch = 0,
+    .roll = 0,
+    .wPressed = 0,
+    .sPressed = 0,
+    .aPressed = 0,
+    .dPressed = 0
+};
 
 void DrawBullet(float x, float y, float z) {
     glPushMatrix();
@@ -55,6 +66,8 @@ void FireBullet(void) {
 }
 
 void UpdateBullets(void) {
+    static float bulletTimers[MAX_BULLETS] = {0};  // Track lifetime of each bullet
+    
     for (int i = 0; i < MAX_BULLETS; i++) {
         if (bullets[i].active) {
             // Move bullets using their stored direction
@@ -62,15 +75,19 @@ void UpdateBullets(void) {
             bullets[i].y += BULLET_SPEED * bullets[i].dirY;
             bullets[i].z += BULLET_SPEED * bullets[i].dirZ;
             
+            // Increment bullet lifetime
+            bulletTimers[i]++;
+            
             // Calculate distance from ship to bullet
             float dx = bullets[i].x - shipState.x;
             float dy = bullets[i].y - shipState.y;
             float dz = bullets[i].z - shipState.z;
             float distanceFromShip = sqrt(dx*dx + dy*dy + dz*dz);
             
-            // Deactivate if too far from ship (using STAR_VIEW_DISTANCE)
-            if (distanceFromShip > STAR_VIEW_DISTANCE) {
+            // Deactivate if too far or too old
+            if (distanceFromShip > BULLET_VIEW_DISTANCE || bulletTimers[i] > BULLET_LIFETIME) {
                 bullets[i].active = 0;
+                bulletTimers[i] = 0;
             }
         }
     }

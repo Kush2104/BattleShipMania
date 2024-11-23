@@ -3,13 +3,14 @@
 #include "include/input.h"
 #include "include/utils.h"
 #include "include/battleship.h"
+#include "include/celestial.h"
 
 void reshape(int width, int height) {
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    // Adjusted field of view and view distance for better chase camera view
-    gluPerspective(45.0, (float)width / height, 0.1, 100.0);
+    // Much larger zFar value to accommodate distant stars
+    gluPerspective(45.0, (float)width / height, 0.1, STAR_VIEW_DISTANCE * 1.2);
     glMatrixMode(GL_MODELVIEW);
 }
 
@@ -36,6 +37,8 @@ int main(int argc, char **argv) {
 
     // Initialize game components
     initStars();
+    initSolarSystem();
+
     initializeInput();
 
     // Set up display callbacks
