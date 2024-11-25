@@ -28,7 +28,7 @@ void generateStarSpherical(int index, float centerX, float centerY, float center
     stars[index].z = centerZ + z;
     
     // Randomize brightness but keep it subtle
-    stars[index].brightness = randomFloat(0.3f, 0.8f);
+    stars[index].brightness = randomFloat(2.3f, 2.8f);
     stars[index].twinkleSpeed = randomFloat(0.001f, 0.002f);
 }
 

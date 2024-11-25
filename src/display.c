@@ -54,7 +54,7 @@ void displayStars() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     
-    glPointSize(1.0);  // Smaller points for distant stars
+    glPointSize(2.0);  // Smaller points for distant stars
     glEnable(GL_POINT_SMOOTH);
     
     glBegin(GL_POINTS);
@@ -63,7 +63,6 @@ void displayStars() {
         float dx = stars[i].x - shipState.x;
         float dy = stars[i].y - shipState.y;
         float dz = stars[i].z - shipState.z;
-        float distToShip = sqrt(dx*dx + dy*dy + dz*dz);
         
         // Calculate apparent motion (extremely subtle parallax)
         float parallaxFactor = 0.0001f;  // Very small factor for subtle movement
@@ -102,6 +101,9 @@ void displayStars() {
 }
 
 void display() {
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 

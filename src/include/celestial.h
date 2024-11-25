@@ -9,7 +9,6 @@
 
 #define SPACE_SCALE_FACTOR 0.00001f    // Back to original
 #define BODY_SCALE_FACTOR 0.0001f      // Back to original
-#define ASTEROID_SCALE_FACTOR 0.05f    // New scale factor specifically for asteroids
 
 // Celestial body types
 #define CELESTIAL_SUN 0
@@ -19,6 +18,37 @@
 #define CELESTIAL_NEBULA 4
 #define CELESTIAL_BLACK_HOLE 5
 #define CELESTIAL_SPACE_STATION 6
+
+#define ASTEROID_SCALE_FACTOR 5.0f
+#define MIN_ASTEROID_VERTICES 24  // More vertices for smoother shape
+#define MAX_ASTEROID_VERTICES 32
+#define NUM_ASTEROIDS 50
+#define MIN_ASTEROID_RADIUS 8.0
+#define MAX_ASTEROID_RADIUS 15.0
+#define SURFACE_ROUGHNESS 0.15f
+#define NOISE_FACTOR 0.4f 
+#define ASTEROID_BELT_DISTANCE 2000.0f
+#define BELT_WIDTH 500.0f
+#define BELT_HEIGHT 50.0f  // Reduced height for less vertical spread
+#define ASTEROID_Y_SCALE 2.0f  // New constant for vertical scaling
+
+#define MIN_ORBIT_SPEED 0.0001f  // Much slower minimum orbit speed
+#define MAX_ORBIT_SPEED 0.0002f  // Much slower maximum orbit speed
+
+// New structure for asteroid vertices
+typedef struct {
+    float x, y, z;
+} Vertex3D;
+
+typedef struct {
+    Vertex3D* vertices;
+    int numVertices;
+    float rotation;
+    float rotationSpeed;
+    float orbitAngle;
+    float orbitRadius;
+    float orbitSpeed;
+} Asteroid;
 
 typedef struct {
     float x, y, z;           // Position
@@ -48,6 +78,9 @@ void drawSolarSystem(void);
 void drawBody(CelestialBody* body);
 float getScaledDistance(float realDistance);
 float getScaledRadius(float realRadius);
+
+void drawAsteroid(Asteroid* asteroid);
+Vertex3D* generateAsteroidVertices(int* numVertices);
 
 // New function declarations for special celestial bodies
 void drawAsteroidBelt(CelestialBody* belt);

@@ -7,6 +7,10 @@
 CelestialBody solarBodies[MAX_BODIES];
 int bodyCount = 0;
 
+float smoothNoise(float x, float y, float z) {
+    return (float)rand() / RAND_MAX;
+}
+
 void initSolarSystem(void) {
     bodyCount = 0;  // Reset counter
     
@@ -63,70 +67,175 @@ void initSolarSystem(void) {
     asteroidBelt->specialEffectIntensity = 1.0f;
 }
 
-void drawAsteroidBelt(CelestialBody* belt) {
-    glPushMatrix();
-    glTranslatef(belt->x, belt->y, belt->z);
-    glRotatef(belt->currentRotation, 0, 1, 0);
+Vertex3D* generateAsteroidVertices(int* numVertices) {
+    *numVertices = MIN_ASTEROID_VERTICES;
+    int verticalSegments = 6;  // For more spherical shape
+    int horizontalSegments = *numVertices / 2;
     
-    // Enable lighting
-    glEnable(GL_LIGHTING);
+    // Allocate space for all vertices including top and bottom points
+    int totalVertices = (verticalSegments - 1) * horizontalSegments + 2;
+    Vertex3D* vertices = (Vertex3D*)malloc(sizeof(Vertex3D) * totalVertices);
     
-    // Material properties for asteroids
-    GLfloat mat_ambient[] = { 0.4f, 0.4f, 0.4f, 1.0f };
-    GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-    GLfloat mat_specular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-    GLfloat mat_shininess[] = { 25.0f };
+    // Base radius for this asteroid
+    float baseRadius = MIN_ASTEROID_RADIUS + 
+                      ((float)rand() / RAND_MAX) * (MAX_ASTEROID_RADIUS - MIN_ASTEROID_RADIUS);
+
+    // Generate vertices for a spheroid base
+    int idx = 0;
     
-    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+    // Top vertex
+    vertices[idx].x = 0;
+    vertices[idx].y = baseRadius;
+    vertices[idx].z = 0;
+    idx++;
     
-    const int NUM_ASTEROIDS = 100;
-    const float BELT_RADIUS = belt->orbitRadius;
-    const float BELT_WIDTH = BELT_RADIUS * 0.2f;
-    const float BELT_HEIGHT = BELT_RADIUS * 0.05f;
+    // Generate vertices in rings
+    for (int i = 1; i < verticalSegments; i++) {
+        float phi = M_PI * i / verticalSegments;
+        float y = baseRadius * cos(phi);
+        float radius = baseRadius * sin(phi);
+        
+        for (int j = 0; j < horizontalSegments; j++) {
+            float theta = 2 * M_PI * j / horizontalSegments;
+            
+            // Calculate base spherical position
+            float x = radius * cos(theta);
+            float z = radius * sin(theta);
+            
+            // Add controlled random variation to create rocky surface
+            float noiseScale = SURFACE_ROUGHNESS * baseRadius;
+            float distortion = 1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS;
+            
+            vertices[idx].x = x * distortion;
+            vertices[idx].y = y * (1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS);
+            vertices[idx].z = z * distortion;
+            
+            idx++;
+        }
+    }
     
-    // First, draw the orbit line (more visible)
-    glDisable(GL_LIGHTING);
-    glColor4f(0.6f, 0.6f, 0.6f, 1.0f);  // Solid color, no transparency
+    // Bottom vertex
+    vertices[idx].x = 0;
+    vertices[idx].y = -baseRadius;
+    vertices[idx].z = 0;
     
-    glBegin(GL_LINE_LOOP);
-    for(int i = 0; i < 360; i += 5) {
-        float angle = i * M_PI / 180.0f;
-        glVertex3f(cos(angle) * BELT_RADIUS, 0, sin(angle) * BELT_RADIUS);
+    *numVertices = totalVertices;
+    return vertices;
+}
+
+void drawAsteroid(Asteroid* asteroid) {
+    // Set gray rock material properties
+    float ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
+    float diffuse[] = {0.5f, 0.5f, 0.5f, 1.0f};
+    float specular[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    
+    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT, GL_SHININESS, 10.0);
+
+    int horizontalSegments = (MIN_ASTEROID_VERTICES / 2);
+    int verticalSegments = 6;
+    
+    // Draw top cap
+    glBegin(GL_TRIANGLE_FAN);
+    // Center vertex
+    glNormal3f(0, 1, 0);
+    glVertex3f(asteroid->vertices[0].x, 
+              asteroid->vertices[0].y, 
+              asteroid->vertices[0].z);
+              
+    // Edge vertices
+    for (int j = 0; j <= horizontalSegments; j++) {
+        int idx = 1 + (j % horizontalSegments);
+        Vertex3D v = asteroid->vertices[idx];
+        float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        glNormal3f(v.x/len, v.y/len, v.z/len);
+        glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
     
-    // Now draw the asteroids
-    glEnable(GL_LIGHTING);
-    for(int i = 0; i < NUM_ASTEROIDS; i++) {
-        float angle = (float)i * (360.0f / NUM_ASTEROIDS);
-        float radius = BELT_RADIUS + sin(i * 3.14159f/7) * BELT_WIDTH;
-        float height = cos(i * 3.14159f/5) * BELT_HEIGHT;
-        
-        glPushMatrix();
-        glRotatef(angle, 0, 1, 0);
-        glTranslatef(radius, height, 0);
-        
-        // Rotate each asteroid
-        float rotAngle = belt->currentRotation * (1.0f + (i % 5) * 0.2f);
-        glRotatef(rotAngle, 1, 1, 1);
-        
-        // Make asteroids much larger
-        float size = 50.0f + (float)(i % 5) * 10.0f;  // Much larger size
-        glScalef(size, size, size);
-        
-        // Draw the asteroid
-        glColor3f(0.7f + (i % 3) * 0.1f, 
-                 0.7f + (i % 3) * 0.1f, 
-                 0.7f + (i % 3) * 0.1f);
-        Sphere(0, 0, 0, 1.0);
-        
-        glPopMatrix();
+    // Draw body segments
+    for (int i = 0; i < verticalSegments - 2; i++) {
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int j = 0; j <= horizontalSegments; j++) {
+            for (int k = 0; k < 2; k++) {
+                int row = i + k;
+                int idx = 1 + row * horizontalSegments + (j % horizontalSegments);
+                Vertex3D v = asteroid->vertices[idx];
+                float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+                glNormal3f(v.x/len, v.y/len, v.z/len);
+                glVertex3f(v.x, v.y, v.z);
+            }
+        }
+        glEnd();
     }
     
-    glPopMatrix();
+    // Draw bottom cap
+    glBegin(GL_TRIANGLE_FAN);
+    int lastIdx = asteroid->numVertices - 1;
+    glNormal3f(0, -1, 0);
+    glVertex3f(asteroid->vertices[lastIdx].x, 
+              asteroid->vertices[lastIdx].y, 
+              asteroid->vertices[lastIdx].z);
+              
+    int startIdx = lastIdx - horizontalSegments;
+    for (int j = horizontalSegments; j >= 0; j--) {
+        int idx = startIdx + (j % horizontalSegments);
+        Vertex3D v = asteroid->vertices[idx];
+        float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        glNormal3f(v.x/len, v.y/len, v.z/len);
+        glVertex3f(v.x, v.y, v.z);
+    }
+    glEnd();
+}
+
+void drawAsteroidBelt(CelestialBody* belt) {
+    static Asteroid* asteroids = NULL;
+    static float* fixedY = NULL;
+    
+    // Initialize asteroids if not already done
+    if (asteroids == NULL) {
+        srand(1234);  // Fixed seed for consistent generation
+        asteroids = (Asteroid*)malloc(sizeof(Asteroid) * NUM_ASTEROIDS);
+        fixedY = (float*)malloc(sizeof(float) * NUM_ASTEROIDS);
+        
+        for (int i = 0; i < NUM_ASTEROIDS; i++) {
+            asteroids[i].numVertices = 0;
+            asteroids[i].vertices = generateAsteroidVertices(&asteroids[i].numVertices);
+            asteroids[i].rotation = ((float)rand() / RAND_MAX) * 360.0f;
+            asteroids[i].rotationSpeed = 0.0f;  // No rotation
+            asteroids[i].orbitAngle = ((float)rand() / RAND_MAX) * 2 * M_PI;
+            asteroids[i].orbitRadius = ASTEROID_BELT_DISTANCE + ((float)rand() / RAND_MAX - 0.5) * BELT_WIDTH;
+            asteroids[i].orbitSpeed = MIN_ORBIT_SPEED;
+            fixedY[i] = ((float)rand() / RAND_MAX - 0.5) * BELT_HEIGHT;
+        }
+    }
+    
+    // Set up lighting for the asteroids
+    GLfloat light_position[] = {0.0, 1000.0, 0.0, 1.0};
+    GLfloat light_ambient[] = {0.3, 0.3, 0.3, 1.0};
+    GLfloat light_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+    GLfloat light_specular[] = {0.5, 0.5, 0.5, 1.0};
+    
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    
+    // Draw each asteroid
+    for (int i = 0; i < NUM_ASTEROIDS; i++) {
+        asteroids[i].orbitAngle += asteroids[i].orbitSpeed;
+        
+        float x = cos(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
+        float z = sin(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
+        
+        glPushMatrix();
+        glTranslatef(x, fixedY[i], z);
+        glRotatef(asteroids[i].rotation, 0, 1, 0);
+        drawAsteroid(&asteroids[i]);
+        glPopMatrix();
+    }
 }
 
 void setupSolarLighting(void) {
@@ -155,6 +264,14 @@ void setupSolarLighting(void) {
     glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0);
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
     glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0000001);
+}
+
+void printCameraInfo(void) {
+    // Call this from your display function
+    GLfloat modelview[16];
+    glGetFloatv(GL_MODELVIEW_MATRIX, modelview);
+    printf("Camera Position: %.2f, %.2f, %.2f\n", 
+           -modelview[12], -modelview[13], -modelview[14]);
 }
 
 float getScaledDistance(float realDistance) {

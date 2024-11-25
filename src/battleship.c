@@ -296,7 +296,6 @@ void SetupCamera(void) {
     // Calculate camera position based on ship's orientation
     float shipRad = -shipState.yaw * M_PI / 180.0f;  // Negative yaw for correct camera placement
     float pitchRad = shipState.pitch * M_PI / 180.0f;
-    float rollRad = shipState.roll * M_PI / 180.0f;
     
     // Calculate camera position
     float camX = shipState.x - camDist * cos(shipRad);

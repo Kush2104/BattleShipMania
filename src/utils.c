@@ -13,13 +13,37 @@
 #define Cos(x) (cos((x)*M_PI/180))
 #define Sin(x) (sin((x)*M_PI/180))
 
-GLuint loadTexture(const char* filepath) {
-    int width, height, channels;
-    unsigned char* data = stbi_load(filepath, &width, &height, &channels, 0);
+GLuint LoadBMP(const char* filename) {
+    FILE* file = fopen(filename, "rb");
+    if (!file) {
+        printf("Error: Unable to open %s\n", filename);
+        exit(1);
+    }
 
-    if (!data) {
-        fprintf(stderr, "Failed to load texture: %s\n", filepath);
-        return 0;
+    unsigned char header[54];
+    fread(header, sizeof(unsigned char), 54, file); 
+
+    int width = *(int*)&header[18];
+    int height = *(int*)&header[22];
+    int bpp = *(short*)&header[28];  
+
+    if (bpp != 24) {
+        printf("Error: %s is not a 24-bit BMP file\n", filename);
+        fclose(file);
+        exit(1);
+    }
+
+    int size = 3 * width * height;  
+
+    unsigned char* data = (unsigned char*)malloc(size);
+
+    fread(data, sizeof(unsigned char), size, file);
+    fclose(file);  
+
+    for (int i = 0; i < size; i += 3) {
+        unsigned char temp = data[i];         
+        data[i] = data[i + 2];
+        data[i + 2] = temp;
     }
 
     GLuint texture;
@@ -31,11 +55,13 @@ GLuint loadTexture(const char* filepath) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, channels == 4 ? GL_RGBA : GL_RGB, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
-    stbi_image_free(data);
+    free(data);
+
     return texture;
 }
+
 
 void Vertex(double th, double ph) {
     // glColor3f(Cos(th) * Cos(th), Sin(ph) * Sin(ph), Sin(th) * Sin(th));
