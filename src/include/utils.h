@@ -14,7 +14,7 @@
 #endif
 
 // Texture loading function
-GLuint loadTexture(const char *filename);
+GLuint LoadBMP(const char *filename);
 void Cylinder(double x, double y, double z, double radius, double height);
 void Cone(double x, double y, double z, double radius, double height);
 void Cube(double x, double y, double z, double width, double height, double depth, double angle, double ax, double ay, double az);

@@ -46,13 +46,13 @@ void key(unsigned char ch, int x, int y) {
         case 'a':
         case 'A':
             SetRollPressed(1, 1);  // A pressed - will handle roll in update
-            RotateShip(-ROTATION_SPEED, 0);  // Turn left
+            RotateShip(ROTATION_SPEED, 0);  // Turn left
             break;
             
         case 'd':
         case 'D':
             SetRollPressed(0, 1);  // D pressed - will handle roll in update
-            RotateShip(ROTATION_SPEED, 0);   // Turn right
+            RotateShip(-ROTATION_SPEED, 0);   // Turn right
             break;
             
         case 'f':

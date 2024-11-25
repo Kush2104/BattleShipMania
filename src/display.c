@@ -1,9 +1,9 @@
-#include <GL/glut.h>
 #include <math.h>
 #include "include/display.h"
 #include "include/init.h"
 #include "include/battleship.h"
 #include "include/input.h"
+#include "include/celestial.h"
 
 void drawAxes() {
     glBegin(GL_LINES);
@@ -47,15 +47,62 @@ void updateStarBrightness() {
 }
 
 void displayStars() {
+    glPushMatrix();
+    
+    // Enable blending for stars
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    glPointSize(2.0);  // Smaller points for distant stars
+    glEnable(GL_POINT_SMOOTH);
+    
     glBegin(GL_POINTS);
     for (int i = 0; i < NUM_STARS; i++) {
-        glColor3f(stars[i].brightness, stars[i].brightness, stars[i].brightness);
-        glVertex3f(stars[i].x, stars[i].y, stars[i].z);
+        // Calculate distance to star
+        float dx = stars[i].x - shipState.x;
+        float dy = stars[i].y - shipState.y;
+        float dz = stars[i].z - shipState.z;
+        
+        // Calculate apparent motion (extremely subtle parallax)
+        float parallaxFactor = 0.0001f;  // Very small factor for subtle movement
+        float apparentX = stars[i].x - shipState.x * parallaxFactor;
+        float apparentY = stars[i].y - shipState.y * parallaxFactor;
+        float apparentZ = stars[i].z - shipState.z * parallaxFactor;
+        
+        // Calculate relative velocity effect (very subtle)
+        float speedEffect = 1.0f;
+        if (keyStates.upPressed) {
+            // Extremely subtle stretching effect
+            float dotProduct = (dx * cos(shipState.yaw * M_PI / 180.0f) +
+                              dy * sin(shipState.pitch * M_PI / 180.0f) +
+                              dz * sin(shipState.yaw * M_PI / 180.0f));
+            speedEffect = 1.0f + fabs(dotProduct) / (STAR_VIEW_DISTANCE * 10.0f);
+        }
+        
+        // Very subtle brightness adjustment
+        float adjustedBrightness = stars[i].brightness * speedEffect;
+        
+        // Additional fade at edges of view for better depth perception
+        float angleFromCenter = atan2(sqrt(dx*dx + dz*dz), dy);
+        float viewFade = cos(angleFromCenter * 0.5f);
+        adjustedBrightness *= viewFade;
+        
+        // Set star color
+        glColor4f(1.0f, 1.0f, 1.0f, adjustedBrightness);
+        glVertex3f(apparentX, apparentY, apparentZ);
     }
     glEnd();
+    
+    glDisable(GL_POINT_SMOOTH);
+    glDisable(GL_BLEND);
+    
+    glPopMatrix();
 }
 
 void display() {
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
@@ -93,6 +140,8 @@ void display() {
     glDisable(GL_POINT_SMOOTH);
     glPopMatrix();
 
+    drawSolarSystem();
+
     // Draw Battleship
     glPushMatrix();
     drawBattleship();
@@ -107,12 +156,15 @@ void display() {
     glutSwapBuffers();
 }
 
-void idle() {
+void idle(void) {
     // Update star twinkling
     updateStarBrightness();
 
     // Update ship state (handles automatic pitch/roll returns)
     UpdateShipState();
+    
+    // Check for collisions
+    checkBulletAsteroidCollisions();
 
     // Request display update
     glutPostRedisplay();

@@ -12,18 +12,29 @@ float randomFloat(float min, float max) {
     return min + scale * (max - min);
 }
 
-void generateStarInBox(int index, float centerX, float centerY, float centerZ) {
-    // Generate star within viewing box centered on the ship
-    stars[index].x = randomFloat(centerX - STAR_VIEW_DISTANCE, centerX + STAR_VIEW_DISTANCE);
-    stars[index].y = randomFloat(centerY - STAR_VIEW_DISTANCE, centerY + STAR_VIEW_DISTANCE);
-    stars[index].z = randomFloat(centerZ - STAR_VIEW_DISTANCE, centerZ + STAR_VIEW_DISTANCE);
-    stars[index].brightness = randomFloat(0.2f, 0.6f);  // More subtle brightness range
-    stars[index].twinkleSpeed = randomFloat(0.001f, 0.003f);  // Slower twinkling
+void generateStarSpherical(int index, float centerX, float centerY, float centerZ) {
+    // Generate stars in a complete sphere around the viewer
+    float phi = randomFloat(0, 2 * M_PI);           // Azimuthal angle (around)
+    float theta = randomFloat(0, M_PI);             // Polar angle (up/down)
+    float distance = randomFloat(STAR_VIEW_DISTANCE * 0.5f, STAR_VIEW_DISTANCE);
+    
+    // Convert spherical to Cartesian coordinates
+    float x = distance * sin(theta) * cos(phi);
+    float y = distance * sin(theta) * sin(phi);
+    float z = distance * cos(theta);
+    
+    stars[index].x = centerX + x;
+    stars[index].y = centerY + y;
+    stars[index].z = centerZ + z;
+    
+    // Randomize brightness but keep it subtle
+    stars[index].brightness = randomFloat(2.3f, 2.8f);
+    stars[index].twinkleSpeed = randomFloat(0.001f, 0.002f);
 }
 
 void initStars() {
     for (int i = 0; i < NUM_STARS; i++) {
-        generateStarInBox(i, 0, 0, 0);
+        generateStarSpherical(i, 0, 0, 0);
     }
     lastRegenX = lastRegenY = lastRegenZ = 0.0f;
 }
@@ -36,26 +47,10 @@ void regenerateStarField(float shipX, float shipY, float shipZ) {
     float distMoved = sqrt(dx*dx + dy*dy + dz*dz);
     
     if (distMoved > STAR_SPACING) {
-        // Calculate how many stars to regenerate based on movement
-        int starsToRegen = (int)(NUM_STARS * (distMoved / STAR_VIEW_DISTANCE * 0.5f));
-        starsToRegen = (starsToRegen < NUM_STARS/4) ? starsToRegen : NUM_STARS/4;
-        
-        for (int i = 0; i < starsToRegen; i++) {
+        // Regenerate stars in all directions
+        for(int i = 0; i < NUM_STARS/4; i++) {
             int starIndex = rand() % NUM_STARS;
-            
-            // Check if star is too far from ship
-            float starDx = stars[starIndex].x - shipX;
-            float starDy = stars[starIndex].y - shipY;
-            float starDz = stars[starIndex].z - shipZ;
-            float starDist = sqrt(starDx*starDx + starDy*starDy + starDz*starDz);
-            
-            if (starDist > STAR_VIEW_DISTANCE * 0.8f) {
-                // Generate new star in front of ship's movement direction
-                generateStarInBox(starIndex, 
-                                shipX + (dx/distMoved) * STAR_VIEW_DISTANCE * 0.5f,
-                                shipY + (dy/distMoved) * STAR_VIEW_DISTANCE * 0.5f,
-                                shipZ + (dz/distMoved) * STAR_VIEW_DISTANCE * 0.5f);
-            }
+            generateStarSpherical(starIndex, shipX, shipY, shipZ);
         }
         
         lastRegenX = shipX;
