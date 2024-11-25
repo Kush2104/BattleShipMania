@@ -10,6 +10,9 @@ static GLuint marsTexture = 0;
 static GLuint mercuryTexture = 0;
 static GLuint venusTexture = 0;
 
+Asteroid* asteroids = NULL;
+int asteroidBeltInitialized = 0;
+
 float smoothNoise(float x, float y, float z) {
     return (float)rand() / RAND_MAX;
 }
@@ -301,50 +304,73 @@ void drawAsteroid(Asteroid* asteroid) {
 }
 
 void drawAsteroidBelt(CelestialBody* belt) {
-    static Asteroid* asteroids = NULL;
     static float* fixedY = NULL;
     
     // Initialize asteroids if not already done
-    if (asteroids == NULL) {
+    if (!asteroidBeltInitialized) {
         srand(1234);  // Fixed seed for consistent generation
         asteroids = (Asteroid*)malloc(sizeof(Asteroid) * NUM_ASTEROIDS);
         fixedY = (float*)malloc(sizeof(float) * NUM_ASTEROIDS);
+        
+        if (!asteroids || !fixedY) {
+            printf("Failed to allocate memory for asteroids\n");
+            exit(1);
+        }
         
         for (int i = 0; i < NUM_ASTEROIDS; i++) {
             asteroids[i].numVertices = 0;
             asteroids[i].vertices = generateAsteroidVertices(&asteroids[i].numVertices);
             asteroids[i].rotation = ((float)rand() / RAND_MAX) * 360.0f;
-            asteroids[i].rotationSpeed = 0.0f;  // No rotation
+            asteroids[i].rotationSpeed = 0.0f;
             asteroids[i].orbitAngle = ((float)rand() / RAND_MAX) * 2 * M_PI;
             asteroids[i].orbitRadius = ASTEROID_BELT_DISTANCE + ((float)rand() / RAND_MAX - 0.5) * BELT_WIDTH;
             asteroids[i].orbitSpeed = MIN_ORBIT_SPEED;
+            asteroids[i].active = 1;
+            asteroids[i].explosion.active = 0;
             fixedY[i] = ((float)rand() / RAND_MAX - 0.5) * BELT_HEIGHT;
         }
+        
+        asteroidBeltInitialized = 1;  // Mark as initialized
     }
-    
-    // Set up lighting for the asteroids
-    GLfloat light_position[] = {0.0, 1000.0, 0.0, 1.0};
-    GLfloat light_ambient[] = {0.3, 0.3, 0.3, 1.0};
-    GLfloat light_diffuse[] = {1.0, 1.0, 1.0, 1.0};
-    GLfloat light_specular[] = {0.5, 0.5, 0.5, 1.0};
-    
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
     
     // Draw each asteroid
     for (int i = 0; i < NUM_ASTEROIDS; i++) {
-        asteroids[i].orbitAngle += asteroids[i].orbitSpeed;
+        if (asteroids[i].active) {
+            asteroids[i].orbitAngle += asteroids[i].orbitSpeed;
+            
+            float x = cos(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
+            float z = sin(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
+            
+            // Store position for collision detection
+            asteroids[i].x = x;
+            asteroids[i].y = fixedY[i];
+            asteroids[i].z = z;
+            
+            glPushMatrix();
+            glTranslatef(x, fixedY[i], z);
+            glRotatef(asteroids[i].rotation, 0, 1, 0);
+            drawAsteroid(&asteroids[i]);
+            glPopMatrix();
+        }
         
-        float x = cos(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
-        float z = sin(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
-        
-        glPushMatrix();
-        glTranslatef(x, fixedY[i], z);
-        glRotatef(asteroids[i].rotation, 0, 1, 0);
-        drawAsteroid(&asteroids[i]);
-        glPopMatrix();
+        // Draw explosion if active
+        if (asteroids[i].explosion.active) {
+            updateExplosion(&asteroids[i].explosion);
+            drawExplosion(&asteroids[i].explosion);
+        }
+    }
+}
+
+void cleanupAsteroids(void) {
+    if (asteroids) {
+        for (int i = 0; i < NUM_ASTEROIDS; i++) {
+            if (asteroids[i].vertices) {
+                free(asteroids[i].vertices);
+            }
+        }
+        free(asteroids);
+        asteroids = NULL;
+        asteroidBeltInitialized = 0;
     }
 }
 
@@ -577,4 +603,88 @@ void drawSolarSystem(void) {
     for(int i = 0; i < bodyCount; i++) {
         drawBody(&solarBodies[i]);
     }
+}
+
+void initExplosion(Explosion* explosion, float x, float y, float z) {
+    explosion->x = x;
+    explosion->y = y;
+    explosion->z = z;
+    explosion->active = 1;
+    
+    for (int i = 0; i < MAX_PARTICLES; i++) {
+        Particle* p = &explosion->particles[i];
+        
+        // Start at explosion center
+        p->x = x;
+        p->y = y;
+        p->z = z;
+        
+        // Random velocity in all directions
+        float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
+        float elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
+        
+        p->vx = EXPLOSION_SPEED * cos(angle) * cos(elevation);
+        p->vy = EXPLOSION_SPEED * sin(elevation);
+        p->vz = EXPLOSION_SPEED * sin(angle) * cos(elevation);
+        
+        p->alpha = 1.0f;
+        p->active = 1;
+    }
+}
+
+void updateExplosion(Explosion* explosion) {
+    if (!explosion->active) return;
+    
+    int activeCount = 0;
+    for (int i = 0; i < MAX_PARTICLES; i++) {
+        Particle* p = &explosion->particles[i];
+        if (!p->active) continue;
+        
+        // Update position
+        p->x += p->vx;
+        p->y += p->vy;
+        p->z += p->vz;
+        
+        // Add slight gravity effect
+        p->vy -= 0.01f;
+        
+        // Fade out
+        p->alpha -= 0.02f;
+        
+        if (p->alpha <= 0) {
+            p->active = 0;
+        } else {
+            activeCount++;
+        }
+    }
+    
+    // If no active particles, explosion is done
+    if (activeCount == 0) {
+        explosion->active = 0;
+    }
+}
+
+void drawExplosion(Explosion* explosion) {
+    if (!explosion->active) return;
+    
+    glPushMatrix();
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    glPointSize(2.0);
+    glBegin(GL_POINTS);
+    for (int i = 0; i < MAX_PARTICLES; i++) {
+        Particle* p = &explosion->particles[i];
+        if (!p->active) continue;
+        
+        // Orange-red color for explosion
+        glColor4f(1.0f, 0.4f, 0.0f, p->alpha);
+        glVertex3f(p->x, p->y, p->z);
+    }
+    glEnd();
+    
+    glDisable(GL_BLEND);
+    glEnable(GL_LIGHTING);
+    glPopMatrix();
 }

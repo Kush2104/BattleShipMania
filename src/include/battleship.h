@@ -52,6 +52,7 @@ void RotateShip(float yaw, float pitch);
 void SetPitchPressed(int isW, int state);
 void SetRollPressed(int isA, int state);
 void UpdateShipState(void);
-void UpdateRoll(void);
+void UpdateRoll(void);  
+void checkBulletAsteroidCollisions(void);
 
 #endif

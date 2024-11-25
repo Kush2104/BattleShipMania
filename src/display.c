@@ -156,12 +156,15 @@ void display() {
     glutSwapBuffers();
 }
 
-void idle() {
+void idle(void) {
     // Update star twinkling
     updateStarBrightness();
 
     // Update ship state (handles automatic pitch/roll returns)
     UpdateShipState();
+    
+    // Check for collisions
+    checkBulletAsteroidCollisions();
 
     // Request display update
     glutPostRedisplay();

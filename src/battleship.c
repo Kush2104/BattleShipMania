@@ -1,5 +1,6 @@
 #include <math.h>
 #include "include/battleship.h"
+#include "include/celestial.h"
 #include "include/utils.h"
 #include "include/init.h"
 
@@ -166,6 +167,8 @@ void UpdateShipState(void) {
     
     // Update bullets - always update bullets regardless of movement
     UpdateBullets();
+
+    checkBulletAsteroidCollisions();
 }
 
 void drawBattleship(void) {
@@ -306,4 +309,36 @@ void SetupCamera(void) {
     gluLookAt(camX, camY, camZ,                    // Camera position
               shipState.x, shipState.y, shipState.z,// Look at ship
               0, 1, 0);                            // Up vector
+}
+
+void checkBulletAsteroidCollisions(void) {
+    if (!asteroidBeltInitialized) return;  // Don't check if asteroids aren't initialized
+    
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (!bullets[i].active) continue;
+        
+        for (int j = 0; j < NUM_ASTEROIDS; j++) {
+            if (!asteroids[j].active || asteroids[j].explosion.active) continue;
+            
+            // Simple distance check for collision
+            float dx = bullets[i].x - asteroids[j].x;
+            float dy = bullets[i].y - asteroids[j].y;
+            float dz = bullets[i].z - asteroids[j].z;
+            float distSq = dx*dx + dy*dy + dz*dz;
+            float collisionRadius = MAX_ASTEROID_RADIUS * 1.5f;  // Slightly larger for better gameplay
+            
+            if (distSq < (collisionRadius * collisionRadius)) {
+                // Collision detected!
+                bullets[i].active = 0;  // Deactivate bullet
+                asteroids[j].active = 0;  // Destroy asteroid
+                
+                // Start explosion effect
+                initExplosion(&asteroids[j].explosion, 
+                            asteroids[j].x,
+                            asteroids[j].y,
+                            asteroids[j].z);
+                break;
+            }
+        }
+    }
 }

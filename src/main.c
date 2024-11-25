@@ -5,6 +5,8 @@
 #include "include/battleship.h"
 #include "include/celestial.h"
 
+extern Asteroid* asteroids;
+
 void reshape(int width, int height) {
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
@@ -19,8 +21,11 @@ void update(int value) {
     updateMovement();
     UpdateShipState();
     
+    // Check for collisions between bullets and asteroids
+    checkBulletAsteroidCollisions();
+    
     glutPostRedisplay();
-    glutTimerFunc(16, update, 0);  // 60 FPS timing
+    glutTimerFunc(16, update, 0);  // ~60 FPS
 }
 
 int main(int argc, char **argv) {
@@ -48,5 +53,6 @@ int main(int argc, char **argv) {
     glutTimerFunc(0, update, 0);
 
     glutMainLoop();
+    cleanupAsteroids();
     return 0;
 }

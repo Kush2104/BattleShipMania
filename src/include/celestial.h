@@ -39,13 +39,29 @@
 #define MIN_ORBIT_SPEED 0.0001f  // Much slower minimum orbit speed
 #define MAX_ORBIT_SPEED 0.0002f  // Much slower maximum orbit speed
 
+#define MAX_PARTICLES 100
+#define PARTICLE_LIFETIME 50.0f
+#define EXPLOSION_SPEED 2.0f
+
+typedef struct {
+    float x, y, z;        // Position
+    float vx, vy, vz;     // Velocity
+    float alpha;          // Transparency
+    int active;           // Whether particle is active
+} Particle;
+
+typedef struct {
+    float x, y, z;         // Position
+    Particle particles[MAX_PARTICLES];
+    int active;           // Whether explosion is currently happening
+} Explosion;
+
 // New structure for asteroid vertices
 typedef struct {
     float x, y, z;
     float u, v;    // Texture coordinates
 } Vertex3D;
 
-// Add texture ID to asteroid structure
 typedef struct {
     Vertex3D* vertices;
     int numVertices;
@@ -54,8 +70,13 @@ typedef struct {
     float orbitAngle;
     float orbitRadius;
     float orbitSpeed;
-    GLuint textureId;  // OpenGL texture ID
+    GLuint textureId;
+    float x, y, z;        // Current position
+    int active;          // Whether asteroid is still active
+    Explosion explosion;  // Explosion effect when destroyed
 } Asteroid;
+
+extern Asteroid* asteroids;
 
 typedef struct {
     float x, y, z;           // Position
@@ -89,11 +110,22 @@ float getScaledRadius(float realRadius);
 void drawAsteroid(Asteroid* asteroid);
 Vertex3D* generateAsteroidVertices(int* numVertices);
 
+extern Asteroid* asteroids;  // Global declaration
+extern int asteroidBeltInitialized;
+
 // New function declarations for special celestial bodies
 void drawAsteroidBelt(CelestialBody* belt);
 void drawComet(CelestialBody* comet);
 void drawSpaceStation(CelestialBody* station);
 void drawNebula(CelestialBody* nebula);
 void drawBlackHole(CelestialBody* blackHole);
+
+//Explosions
+void initExplosion(Explosion* explosion, float x, float y, float z);
+void updateExplosion(Explosion* explosion);
+void drawExplosion(Explosion* explosion);
+void cleanupAsteroids(void);
+
+
 
 #endif
