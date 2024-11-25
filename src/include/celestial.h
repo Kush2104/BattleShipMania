@@ -2,6 +2,10 @@
 #ifndef SOLAR_SYSTEM_H
 #define SOLAR_SYSTEM_H
 
+#include "battleship.h"
+#include <math.h>
+#include "utils.h"
+
 // Real scales (in km) - we'll apply a scale factor to make it playable
 #define REAL_SUN_RADIUS 696340.0f
 #define REAL_EARTH_RADIUS 6371.0f
@@ -38,8 +42,10 @@
 // New structure for asteroid vertices
 typedef struct {
     float x, y, z;
+    float u, v;    // Texture coordinates
 } Vertex3D;
 
+// Add texture ID to asteroid structure
 typedef struct {
     Vertex3D* vertices;
     int numVertices;
@@ -48,6 +54,7 @@ typedef struct {
     float orbitAngle;
     float orbitRadius;
     float orbitSpeed;
+    GLuint textureId;  // OpenGL texture ID
 } Asteroid;
 
 typedef struct {

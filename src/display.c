@@ -1,4 +1,3 @@
-#include <GL/glut.h>
 #include <math.h>
 #include "include/display.h"
 #include "include/init.h"

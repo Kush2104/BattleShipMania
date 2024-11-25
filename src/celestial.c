@@ -1,11 +1,10 @@
 // solar_system.c
 #include "include/celestial.h"
-#include "include/battleship.h"
-#include "include/utils.h"
-#include <math.h>
 
 CelestialBody solarBodies[MAX_BODIES];
 int bodyCount = 0;
+
+static GLuint asteroidTexture = 0;
 
 float smoothNoise(float x, float y, float z) {
     return (float)rand() / RAND_MAX;
@@ -47,6 +46,12 @@ void initSolarSystem(void) {
     earth->y = 0;
     earth->z = 0;
 
+    asteroidTexture = LoadBMP("src/assets/textures/rock.bmp");
+    if (!asteroidTexture) {
+        printf("Failed to load asteroid texture\n");
+        exit(1);
+    }
+
     // Initialize Asteroid Belt with adjusted position
     CelestialBody* asteroidBelt = &solarBodies[bodyCount++];
     asteroidBelt->originalRadius = REAL_EARTH_ORBIT * 1.2f;  // Closer to Earth
@@ -69,24 +74,23 @@ void initSolarSystem(void) {
 
 Vertex3D* generateAsteroidVertices(int* numVertices) {
     *numVertices = MIN_ASTEROID_VERTICES;
-    int verticalSegments = 6;  // For more spherical shape
+    int verticalSegments = 6;
     int horizontalSegments = *numVertices / 2;
     
-    // Allocate space for all vertices including top and bottom points
     int totalVertices = (verticalSegments - 1) * horizontalSegments + 2;
     Vertex3D* vertices = (Vertex3D*)malloc(sizeof(Vertex3D) * totalVertices);
     
-    // Base radius for this asteroid
     float baseRadius = MIN_ASTEROID_RADIUS + 
                       ((float)rand() / RAND_MAX) * (MAX_ASTEROID_RADIUS - MIN_ASTEROID_RADIUS);
 
-    // Generate vertices for a spheroid base
     int idx = 0;
     
     // Top vertex
     vertices[idx].x = 0;
     vertices[idx].y = baseRadius;
     vertices[idx].z = 0;
+    vertices[idx].u = 0.5f;  // Center of texture for pole
+    vertices[idx].v = 0.0f;  // Top of texture
     idx++;
     
     // Generate vertices in rings
@@ -94,21 +98,24 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
         float phi = M_PI * i / verticalSegments;
         float y = baseRadius * cos(phi);
         float radius = baseRadius * sin(phi);
+        float v = (float)i / verticalSegments;  // Vertical texture coordinate
         
         for (int j = 0; j < horizontalSegments; j++) {
             float theta = 2 * M_PI * j / horizontalSegments;
+            float u = (float)j / horizontalSegments;  // Horizontal texture coordinate
             
             // Calculate base spherical position
             float x = radius * cos(theta);
             float z = radius * sin(theta);
             
-            // Add controlled random variation to create rocky surface
-            float noiseScale = SURFACE_ROUGHNESS * baseRadius;
+            // Add controlled random variation
             float distortion = 1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS;
             
             vertices[idx].x = x * distortion;
             vertices[idx].y = y * (1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS);
             vertices[idx].z = z * distortion;
+            vertices[idx].u = u;
+            vertices[idx].v = v;
             
             idx++;
         }
@@ -118,21 +125,27 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
     vertices[idx].x = 0;
     vertices[idx].y = -baseRadius;
     vertices[idx].z = 0;
+    vertices[idx].u = 0.5f;  // Center of texture for pole
+    vertices[idx].v = 1.0f;  // Bottom of texture
     
     *numVertices = totalVertices;
     return vertices;
 }
 
 void drawAsteroid(Asteroid* asteroid) {
-    // Set gray rock material properties
-    float ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};
-    float diffuse[] = {0.5f, 0.5f, 0.5f, 1.0f};
-    float specular[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    // Set material properties
+    float ambient[] = {0.4f, 0.4f, 0.4f, 1.0f};  // Increased ambient for better texture visibility
+    float diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};  // Full diffuse for texture color
+    float specular[] = {0.1f, 0.1f, 0.1f, 1.0f}; // Low specularity for rocky appearance
     
     glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
     glMaterialf(GL_FRONT, GL_SHININESS, 10.0);
+
+    // Enable texturing
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, asteroidTexture);
 
     int horizontalSegments = (MIN_ASTEROID_VERTICES / 2);
     int verticalSegments = 6;
@@ -141,6 +154,7 @@ void drawAsteroid(Asteroid* asteroid) {
     glBegin(GL_TRIANGLE_FAN);
     // Center vertex
     glNormal3f(0, 1, 0);
+    glTexCoord2f(0.5f, 0.0f);
     glVertex3f(asteroid->vertices[0].x, 
               asteroid->vertices[0].y, 
               asteroid->vertices[0].z);
@@ -151,6 +165,7 @@ void drawAsteroid(Asteroid* asteroid) {
         Vertex3D v = asteroid->vertices[idx];
         float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
         glNormal3f(v.x/len, v.y/len, v.z/len);
+        glTexCoord2f(v.u, v.v);
         glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
@@ -165,6 +180,7 @@ void drawAsteroid(Asteroid* asteroid) {
                 Vertex3D v = asteroid->vertices[idx];
                 float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
                 glNormal3f(v.x/len, v.y/len, v.z/len);
+                glTexCoord2f(v.u, v.v);
                 glVertex3f(v.x, v.y, v.z);
             }
         }
@@ -175,6 +191,7 @@ void drawAsteroid(Asteroid* asteroid) {
     glBegin(GL_TRIANGLE_FAN);
     int lastIdx = asteroid->numVertices - 1;
     glNormal3f(0, -1, 0);
+    glTexCoord2f(0.5f, 1.0f);
     glVertex3f(asteroid->vertices[lastIdx].x, 
               asteroid->vertices[lastIdx].y, 
               asteroid->vertices[lastIdx].z);
@@ -185,9 +202,13 @@ void drawAsteroid(Asteroid* asteroid) {
         Vertex3D v = asteroid->vertices[idx];
         float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
         glNormal3f(v.x/len, v.y/len, v.z/len);
+        glTexCoord2f(v.u, v.v);
         glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
+
+    // Disable texturing
+    glDisable(GL_TEXTURE_2D);
 }
 
 void drawAsteroidBelt(CelestialBody* belt) {
