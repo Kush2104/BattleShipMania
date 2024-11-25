@@ -6,6 +6,9 @@ int bodyCount = 0;
 
 static GLuint asteroidTexture = 0;
 static GLuint earthTexture = 0;
+static GLuint marsTexture = 0;
+static GLuint mercuryTexture = 0;
+static GLuint venusTexture = 0;
 
 float smoothNoise(float x, float y, float z) {
     return (float)rand() / RAND_MAX;
@@ -28,35 +31,47 @@ void initSolarSystem(void) {
     sun->color[3] = 1.0f;    // A
     sun->name = "Sol";
 
-    // Mercury - closest to sun
+     mercuryTexture = LoadBMP("src/assets/textures/mercury.bmp");
+    if (!mercuryTexture) {
+        printf("Failed to load Mercury texture\n");
+        exit(1);
+    }
+
+    // Mercury
     CelestialBody* mercury = &solarBodies[bodyCount++];
     mercury->originalRadius = REAL_EARTH_RADIUS * 0.383f;
-    mercury->radius = 20.0f;  // Visible size
-    mercury->orbitRadius = 500.0f;  // Quarter of the way to asteroid belt
+    mercury->radius = 20.0f;
+    mercury->orbitRadius = 500.0f;
     mercury->orbitSpeed = 0.02f;
     mercury->orbitAngle = 0;
     mercury->rotationSpeed = 0.3f;
     mercury->currentRotation = 0;
     mercury->type = CELESTIAL_PLANET;
-    mercury->color[0] = 0.7f;
-    mercury->color[1] = 0.6f;
-    mercury->color[2] = 0.5f;
+    mercury->color[0] = 1.0f;  // Set to white for texture
+    mercury->color[1] = 1.0f;
+    mercury->color[2] = 1.0f;
     mercury->color[3] = 1.0f;
     mercury->name = "Mercury";
+
+    venusTexture = LoadBMP("src/assets/textures/venus.bmp");
+    if (!venusTexture) {
+        printf("Failed to load Venus texture\n");
+        exit(1);
+    }
 
     // Venus
     CelestialBody* venus = &solarBodies[bodyCount++];
     venus->originalRadius = REAL_EARTH_RADIUS * 0.949f;
-    venus->radius = 25.0f;  // Visible size
-    venus->orbitRadius = 1000.0f;  // Half of the way to asteroid belt
+    venus->radius = 25.0f;
+    venus->orbitRadius = 1000.0f;
     venus->orbitSpeed = 0.015f;
     venus->orbitAngle = 45;
     venus->rotationSpeed = 0.27f;
     venus->currentRotation = 0;
     venus->type = CELESTIAL_PLANET;
-    venus->color[0] = 0.9f;
-    venus->color[1] = 0.8f;
-    venus->color[2] = 0.6f;
+    venus->color[0] = 1.0f;  // Set to white for texture
+    venus->color[1] = 1.0f;
+    venus->color[2] = 1.0f;
     venus->color[3] = 1.0f;
     venus->name = "Venus";
 
@@ -83,19 +98,25 @@ void initSolarSystem(void) {
     earth->color[3] = 1.0f;
     earth->name = "Earth";
 
+    marsTexture = LoadBMP("src/assets/textures/mars.bmp");
+    if (!marsTexture) {
+        printf("Failed to load Mars texture\n");
+        exit(1);
+    }
+
     // Mars
     CelestialBody* mars = &solarBodies[bodyCount++];
     mars->originalRadius = REAL_EARTH_RADIUS * 0.532f;
-    mars->radius = 22.0f;  // Visible size
-    mars->orbitRadius = 1800.0f;  // Close to asteroid belt
+    mars->radius = 22.0f;
+    mars->orbitRadius = 1800.0f;
     mars->orbitSpeed = 0.008f;
     mars->orbitAngle = 135;
     mars->rotationSpeed = 0.48f;
     mars->currentRotation = 0;
     mars->type = CELESTIAL_PLANET;
-    mars->color[0] = 0.9f;
-    mars->color[1] = 0.3f;
-    mars->color[2] = 0.2f;
+    mars->color[0] = 1.0f;  // Set to white for texture
+    mars->color[1] = 1.0f;
+    mars->color[2] = 1.0f;
     mars->color[3] = 1.0f;
     mars->name = "Mars";
 
@@ -446,11 +467,15 @@ void drawBody(CelestialBody* body) {
         glTranslatef(body->x, body->y, body->z);
         glRotatef(body->currentRotation, 0, 1, 0);
 
-        if (strcmp(body->name, "Earth") == 0) {
-            // Set up material properties for Earth
-            GLfloat mat_ambient[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+        if (strcmp(body->name, "Earth") == 0 || 
+            strcmp(body->name, "Mars") == 0 || 
+            strcmp(body->name, "Mercury") == 0 || 
+            strcmp(body->name, "Venus") == 0) {
+            
+            // Material properties
+            GLfloat mat_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
             GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-            GLfloat mat_specular[] = { 0.4f, 0.4f, 0.4f, 1.0f };
+            GLfloat mat_specular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
             GLfloat mat_shininess[] = { 32.0f };
 
             glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
@@ -458,25 +483,62 @@ void drawBody(CelestialBody* body) {
             glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
             glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
+            // Enable texturing
             glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, earthTexture);
             
-            // Set texture environment for proper lighting interaction
+            // Bind appropriate texture
+            if (strcmp(body->name, "Earth") == 0) {
+                glBindTexture(GL_TEXTURE_2D, earthTexture);
+            } else if (strcmp(body->name, "Mars") == 0) {
+                glBindTexture(GL_TEXTURE_2D, marsTexture);
+            } else if (strcmp(body->name, "Mercury") == 0) {
+                glBindTexture(GL_TEXTURE_2D, mercuryTexture);
+            } else if (strcmp(body->name, "Venus") == 0) {
+                glBindTexture(GL_TEXTURE_2D, venusTexture);
+            }
+            
+            // Ensure texture environment is set correctly
             glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-            // Set texture parameters
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-            // Draw textured Earth
-            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  // White color to show texture properly
-            Sphere(0, 0, 0, body->radius);
+            
+            // Draw planet with full bright color to show texture properly
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+            
+            // Draw the sphere with texture coordinates
+            const int stacks = 32;
+            const int slices = 32;
+            const float r = body->radius;
+            
+            for (int i = 0; i < stacks; i++) {
+                float lat0 = M_PI * (-0.5 + (float)i / stacks);
+                float lat1 = M_PI * (-0.5 + (float)(i + 1) / stacks);
+                
+                glBegin(GL_QUAD_STRIP);
+                for (int j = 0; j <= slices; j++) {
+                    float lng = 2 * M_PI * (float)j / slices;
+                    
+                    for (int k = 0; k <= 1; k++) {
+                        float lat = k ? lat1 : lat0;
+                        float y = sin(lat);
+                        float x = cos(lng) * cos(lat);
+                        float z = sin(lng) * cos(lat);
+                        
+                        // Texture coordinates
+                        glTexCoord2f((float)j / slices, (float)(i + k) / stacks);
+                        
+                        // Normal for lighting
+                        glNormal3f(x, y, z);
+                        
+                        // Vertex
+                        glVertex3f(r * x, r * y, r * z);
+                    }
+                }
+                glEnd();
+            }
             
             glDisable(GL_TEXTURE_2D);
-        } else {
-            // Material properties for other planets
+        }
+        else {
+            // Default drawing for any other planets
             GLfloat mat_ambient[] = { body->color[0] * 0.2f, body->color[1] * 0.2f, body->color[2] * 0.2f, 1.0f };
             GLfloat mat_diffuse[] = { body->color[0], body->color[1], body->color[2], 1.0f };
             GLfloat mat_specular[] = { 0.2f, 0.2f, 0.2f, 1.0f };

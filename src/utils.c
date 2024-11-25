@@ -21,7 +21,18 @@ GLuint LoadBMP(const char* filename) {
     }
 
     unsigned char header[54];
-    fread(header, sizeof(unsigned char), 54, file); 
+    if (fread(header, sizeof(unsigned char), 54, file) != 54) {
+        printf("Error: Invalid BMP header\n");
+        fclose(file);
+        return 0;
+    }
+
+    // Verify BMP signature
+    if (header[0] != 'B' || header[1] != 'M') {
+        printf("Error: Not a BMP file\n");
+        fclose(file);
+        return 0;
+    }
 
     int width = *(int*)&header[18];
     int height = *(int*)&header[22];
@@ -35,6 +46,11 @@ GLuint LoadBMP(const char* filename) {
 
     int size = 3 * width * height;
     unsigned char* data = (unsigned char*)malloc(size);
+    if (!data) {
+        printf("Error: Memory allocation failed\n");
+        fclose(file);
+        return 0;
+    }
 
     // Calculate padding for rows
     int padding = (4 - (width * 3) % 4) % 4;
@@ -42,45 +58,59 @@ GLuint LoadBMP(const char* filename) {
 
     // Read data with padding
     unsigned char* tempRow = (unsigned char*)malloc(rowSize);
-    for (int i = 0; i < height; i++) {
-        fread(tempRow, 1, rowSize, file);
+    if (!tempRow) {
+        printf("Error: Memory allocation failed for temp row\n");
+        free(data);
+        fclose(file);
+        return 0;
+    }
+
+    // Read row by row
+    for (int i = height - 1; i >= 0; i--) {
+        if (fread(tempRow, 1, rowSize, file) != rowSize) {
+            printf("Error: Failed to read image data\n");
+            free(tempRow);
+            free(data);
+            fclose(file);
+            return 0;
+        }
+        // Copy row data without padding
         memcpy(&data[i * width * 3], tempRow, width * 3);
     }
+
     free(tempRow);
     fclose(file);
 
-    // Swap RGB to BGR and flip vertically
-    for (int i = 0; i < height/2; i++) {
-        for (int j = 0; j < width; j++) {
-            int top = (i * width + j) * 3;
-            int bottom = ((height - 1 - i) * width + j) * 3;
-            
-            // Swap pixels between top and bottom
-            for (int k = 0; k < 3; k++) {
-                unsigned char temp = data[top + k];
-                data[top + k] = data[bottom + (2-k)];
-                data[bottom + (2-k)] = temp;
-            }
-        }
+    // Swap BGR to RGB
+    for (int i = 0; i < size; i += 3) {
+        unsigned char temp = data[i];
+        data[i] = data[i + 2];
+        data[i + 2] = temp;
     }
 
+    // Create and bind texture
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    // Set texture parameters
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // Set texture parameters - using simpler filtering for compatibility
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Load texture data
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
+    // Check for errors
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        printf("OpenGL Error during texture creation: %d\n", err);
+    }
+
     free(data);
     return texture;
 }
-
 
 void Vertex(double th, double ph) {
     // glColor3f(Cos(th) * Cos(th), Sin(ph) * Sin(ph), Sin(th) * Sin(th));
@@ -88,13 +118,12 @@ void Vertex(double th, double ph) {
 }
 
 void Sphere(double x, double y, double z, double radius) {
-    const int stacks = 40;
-    const int slices = 40;
+    const int stacks = 32;  // Reduced for better performance
+    const int slices = 32;
     
     glPushMatrix();
     glTranslated(x, y, z);
     
-    // Draw sphere with proper normal vectors
     for(int i = 0; i < stacks; i++) {
         double lat0 = M_PI * (-0.5 + (double)i / stacks);
         double lat1 = M_PI * (-0.5 + (double)(i + 1) / stacks);
@@ -109,19 +138,19 @@ void Sphere(double x, double y, double z, double radius) {
             double x = cos(lng);
             double y = sin(lng);
             
-            // Normal for the first vertex (normalized position vector is the normal)
-            glNormal3d(x * zr0, y * zr0, z0);
+            // Normal and texcoord for first vertex
+            glNormal3d(x * zr0, z0, y * zr0);
             if(glIsEnabled(GL_TEXTURE_2D)) {
                 glTexCoord2f((float)j/slices, (float)i/stacks);
             }
-            glVertex3d(x * zr0 * radius, y * zr0 * radius, z0 * radius);
+            glVertex3d(radius * x * zr0, radius * z0, radius * y * zr0);
             
-            // Normal for the second vertex
-            glNormal3d(x * zr1, y * zr1, z1);
+            // Normal and texcoord for second vertex
+            glNormal3d(x * zr1, z1, y * zr1);
             if(glIsEnabled(GL_TEXTURE_2D)) {
                 glTexCoord2f((float)j/slices, (float)(i+1)/stacks);
             }
-            glVertex3d(x * zr1 * radius, y * zr1 * radius, z1 * radius);
+            glVertex3d(radius * x * zr1, radius * z1, radius * y * zr1);
         }
         glEnd();
     }
