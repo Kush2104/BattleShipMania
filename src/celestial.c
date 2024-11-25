@@ -5,6 +5,7 @@ CelestialBody solarBodies[MAX_BODIES];
 int bodyCount = 0;
 
 static GLuint asteroidTexture = 0;
+static GLuint earthTexture = 0;
 
 float smoothNoise(float x, float y, float z) {
     return (float)rand() / RAND_MAX;
@@ -13,7 +14,7 @@ float smoothNoise(float x, float y, float z) {
 void initSolarSystem(void) {
     bodyCount = 0;  // Reset counter
     
-    // Initialize Sun (kept the same)
+    // Initialize Sun (kept exactly as before)
     CelestialBody* sun = &solarBodies[bodyCount++];
     sun->originalRadius = REAL_SUN_RADIUS;
     sun->radius = getScaledRadius(REAL_SUN_RADIUS);
@@ -27,34 +28,86 @@ void initSolarSystem(void) {
     sun->color[3] = 1.0f;    // A
     sun->name = "Sol";
 
-    // Initialize Earth with adjusted position
+    // Mercury - closest to sun
+    CelestialBody* mercury = &solarBodies[bodyCount++];
+    mercury->originalRadius = REAL_EARTH_RADIUS * 0.383f;
+    mercury->radius = 20.0f;  // Visible size
+    mercury->orbitRadius = 500.0f;  // Quarter of the way to asteroid belt
+    mercury->orbitSpeed = 0.02f;
+    mercury->orbitAngle = 0;
+    mercury->rotationSpeed = 0.3f;
+    mercury->currentRotation = 0;
+    mercury->type = CELESTIAL_PLANET;
+    mercury->color[0] = 0.7f;
+    mercury->color[1] = 0.6f;
+    mercury->color[2] = 0.5f;
+    mercury->color[3] = 1.0f;
+    mercury->name = "Mercury";
+
+    // Venus
+    CelestialBody* venus = &solarBodies[bodyCount++];
+    venus->originalRadius = REAL_EARTH_RADIUS * 0.949f;
+    venus->radius = 25.0f;  // Visible size
+    venus->orbitRadius = 1000.0f;  // Half of the way to asteroid belt
+    venus->orbitSpeed = 0.015f;
+    venus->orbitAngle = 45;
+    venus->rotationSpeed = 0.27f;
+    venus->currentRotation = 0;
+    venus->type = CELESTIAL_PLANET;
+    venus->color[0] = 0.9f;
+    venus->color[1] = 0.8f;
+    venus->color[2] = 0.6f;
+    venus->color[3] = 1.0f;
+    venus->name = "Venus";
+
+    // Earth
+
+    earthTexture = LoadBMP("src/assets/textures/earth.bmp");
+    if (!earthTexture) {
+        printf("Failed to load Earth texture\n");
+        exit(1);
+    }
+
     CelestialBody* earth = &solarBodies[bodyCount++];
     earth->originalRadius = REAL_EARTH_RADIUS;
-    earth->radius = getScaledRadius(REAL_EARTH_RADIUS);
-    earth->orbitRadius = getScaledDistance(REAL_EARTH_ORBIT);
+    earth->radius = 30.0f;  // Visible size
+    earth->orbitRadius = 1500.0f;  // Three-quarters of the way to asteroid belt
     earth->orbitSpeed = 0.01f;
-    earth->orbitAngle = 0;
+    earth->orbitAngle = 90;
     earth->rotationSpeed = 0.5f;
     earth->currentRotation = 0;
     earth->type = CELESTIAL_PLANET;
-    earth->color[0] = 0.2f;    // Blue color for Earth
+    earth->color[0] = 0.2f;
     earth->color[1] = 0.5f;
     earth->color[2] = 0.8f;
     earth->color[3] = 1.0f;
     earth->name = "Earth";
-    earth->x = earth->orbitRadius;
-    earth->y = 0;
-    earth->z = 0;
 
+    // Mars
+    CelestialBody* mars = &solarBodies[bodyCount++];
+    mars->originalRadius = REAL_EARTH_RADIUS * 0.532f;
+    mars->radius = 22.0f;  // Visible size
+    mars->orbitRadius = 1800.0f;  // Close to asteroid belt
+    mars->orbitSpeed = 0.008f;
+    mars->orbitAngle = 135;
+    mars->rotationSpeed = 0.48f;
+    mars->currentRotation = 0;
+    mars->type = CELESTIAL_PLANET;
+    mars->color[0] = 0.9f;
+    mars->color[1] = 0.3f;
+    mars->color[2] = 0.2f;
+    mars->color[3] = 1.0f;
+    mars->name = "Mars";
+
+    // Initialize Asteroid Belt (kept exactly as before)
     asteroidTexture = LoadBMP("src/assets/textures/rock.bmp");
     if (!asteroidTexture) {
         printf("Failed to load asteroid texture\n");
         exit(1);
     }
 
-    // Initialize Asteroid Belt with adjusted position
     CelestialBody* asteroidBelt = &solarBodies[bodyCount++];
-    asteroidBelt->originalRadius = REAL_EARTH_ORBIT * 1.2f;  // Closer to Earth
+    asteroidBelt->originalRadius = REAL_EARTH_ORBIT * 1.2f;
     asteroidBelt->radius = getScaledDistance(REAL_EARTH_ORBIT * 1.2f);
     asteroidBelt->orbitRadius = getScaledDistance(REAL_EARTH_ORBIT * 1.2f);
     asteroidBelt->x = 0;
@@ -133,18 +186,32 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
 }
 
 void drawAsteroid(Asteroid* asteroid) {
-    // Set material properties
-    float ambient[] = {0.4f, 0.4f, 0.4f, 1.0f};  // Increased ambient for better texture visibility
-    float diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};  // Full diffuse for texture color
-    float specular[] = {0.1f, 0.1f, 0.1f, 1.0f}; // Low specularity for rocky appearance
-    
-    glMaterialfv(GL_FRONT, GL_AMBIENT, ambient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);
-    glMaterialf(GL_FRONT, GL_SHININESS, 10.0);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-    // Enable texturing
+    // Set material properties for lighting
+    GLfloat mat_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };  // White for proper texture color
+    GLfloat mat_specular[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    GLfloat mat_shininess[] = { 32.0f };
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+    // Enable texturing before setting texture environment
     glEnable(GL_TEXTURE_2D);
+    
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    // Set texture environment mode to modulate
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    
+    // Bind the asteroid texture
     glBindTexture(GL_TEXTURE_2D, asteroidTexture);
 
     int horizontalSegments = (MIN_ASTEROID_VERTICES / 2);
@@ -152,7 +219,7 @@ void drawAsteroid(Asteroid* asteroid) {
     
     // Draw top cap
     glBegin(GL_TRIANGLE_FAN);
-    // Center vertex
+    // Center vertex - calculate normal pointing straight up
     glNormal3f(0, 1, 0);
     glTexCoord2f(0.5f, 0.0f);
     glVertex3f(asteroid->vertices[0].x, 
@@ -163,6 +230,7 @@ void drawAsteroid(Asteroid* asteroid) {
     for (int j = 0; j <= horizontalSegments; j++) {
         int idx = 1 + (j % horizontalSegments);
         Vertex3D v = asteroid->vertices[idx];
+        // Calculate normal as normalized position
         float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
         glNormal3f(v.x/len, v.y/len, v.z/len);
         glTexCoord2f(v.u, v.v);
@@ -260,31 +328,27 @@ void drawAsteroidBelt(CelestialBody* belt) {
 }
 
 void setupSolarLighting(void) {
-    // Enable lighting
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    glEnable(GL_COLOR_MATERIAL);
-    glEnable(GL_NORMALIZE);  // Important for correct normal scaling
+    glEnable(GL_NORMALIZE);
+    glShadeModel(GL_SMOOTH);
     
-    // Set up material properties
-    GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-    GLfloat mat_shininess[] = { 50.0 };
-    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-    
-    // Setup sun's light properties
-    GLfloat light_ambient[] = { 0.2f, 0.2f, 0.1f, 1.0f };
-    GLfloat light_diffuse[] = { 1.0f, 0.95f, 0.8f, 1.0f };
-    GLfloat light_specular[] = { 1.0f, 1.0f, 0.9f, 1.0f };
+    // Set up light properties
+    GLfloat light_ambient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
+    GLfloat light_diffuse[] = { 1.2f, 1.2f, 1.2f, 1.0f };
+    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
-    
-    // Enable light attenuation
+
+    // Adjusted attenuation for strong directional lighting
     glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 1.0);
     glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.0);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0000001);
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0000005);
+
+    // Make sure we're using GL_MODULATE for proper lighting of textures
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
 void printCameraInfo(void) {
@@ -335,12 +399,10 @@ void updateSolarSystem(void) {
 
 void drawBody(CelestialBody* body) {
     if(body->type == CELESTIAL_SUN) {
-        // Existing sun drawing code...
         glPushMatrix();
         glTranslatef(body->x, body->y, body->z);
         glRotatef(body->currentRotation, 0, 1, 0);
         
-        // Disable lighting for the sun
         glDisable(GL_LIGHTING);
         
         // Draw the sun's core
@@ -367,40 +429,75 @@ void drawBody(CelestialBody* body) {
         
         glDisable(GL_BLEND);
         glPopMatrix();
+
+        // Position the light at the sun's center
+        GLfloat light_position[] = { body->x, body->y, body->z, 1.0f };
+        glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+        
+        glEnable(GL_LIGHTING);
     }
     else if(body->type == CELESTIAL_PLANET) {
-        // Existing planet drawing code...
         glPushMatrix();
+        
+        float orbitAngleRad = body->orbitAngle * M_PI / 180.0f;
+        body->x = cos(orbitAngleRad) * body->orbitRadius;
+        body->z = sin(orbitAngleRad) * body->orbitRadius;
+        
         glTranslatef(body->x, body->y, body->z);
         glRotatef(body->currentRotation, 0, 1, 0);
-        
-        // Enable lighting for planets
-        glEnable(GL_LIGHTING);
-        
-        // Set material properties
-        GLfloat mat_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-        GLfloat mat_diffuse[] = {
-            body->color[0],
-            body->color[1],
-            body->color[2],
-            body->color[3]
-        };
-        GLfloat mat_specular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
-        GLfloat mat_shininess[] = { 25.0f };
-        
-        glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-        
-        Sphere(0, 0, 0, body->radius);
+
+        if (strcmp(body->name, "Earth") == 0) {
+            // Set up material properties for Earth
+            GLfloat mat_ambient[] = { 0.05f, 0.05f, 0.05f, 1.0f };
+            GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+            GLfloat mat_specular[] = { 0.4f, 0.4f, 0.4f, 1.0f };
+            GLfloat mat_shininess[] = { 32.0f };
+
+            glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+            glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+            glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, earthTexture);
+            
+            // Set texture environment for proper lighting interaction
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+            // Set texture parameters
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+            // Draw textured Earth
+            glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  // White color to show texture properly
+            Sphere(0, 0, 0, body->radius);
+            
+            glDisable(GL_TEXTURE_2D);
+        } else {
+            // Material properties for other planets
+            GLfloat mat_ambient[] = { body->color[0] * 0.2f, body->color[1] * 0.2f, body->color[2] * 0.2f, 1.0f };
+            GLfloat mat_diffuse[] = { body->color[0], body->color[1], body->color[2], 1.0f };
+            GLfloat mat_specular[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+            GLfloat mat_shininess[] = { 32.0f };
+
+            glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+            glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+            glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
+            glColor4f(body->color[0], body->color[1], body->color[2], body->color[3]);
+            Sphere(0, 0, 0, body->radius);
+        }
         
         glPopMatrix();
     }
     else if(body->type == CELESTIAL_ASTEROID) {
-        drawAsteroidBelt(body);  // Call our new asteroid belt function
+        drawAsteroidBelt(body);
     }
 }
+
 void drawSolarSystem(void) {
     // Set up lighting before drawing
     setupSolarLighting();

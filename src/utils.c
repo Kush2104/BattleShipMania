@@ -17,7 +17,7 @@ GLuint LoadBMP(const char* filename) {
     FILE* file = fopen(filename, "rb");
     if (!file) {
         printf("Error: Unable to open %s\n", filename);
-        exit(1);
+        return 0;
     }
 
     unsigned char header[54];
@@ -30,38 +30,54 @@ GLuint LoadBMP(const char* filename) {
     if (bpp != 24) {
         printf("Error: %s is not a 24-bit BMP file\n", filename);
         fclose(file);
-        exit(1);
+        return 0;
     }
 
-    int size = 3 * width * height;  
-
+    int size = 3 * width * height;
     unsigned char* data = (unsigned char*)malloc(size);
 
-    fread(data, sizeof(unsigned char), size, file);
-    fclose(file);  
+    // Calculate padding for rows
+    int padding = (4 - (width * 3) % 4) % 4;
+    int rowSize = width * 3 + padding;
 
-    for (int i = 0; i < size; i += 3) {
-        unsigned char temp = data[i];         
-        data[i] = data[i + 2];
-        data[i + 2] = temp;
+    // Read data with padding
+    unsigned char* tempRow = (unsigned char*)malloc(rowSize);
+    for (int i = 0; i < height; i++) {
+        fread(tempRow, 1, rowSize, file);
+        memcpy(&data[i * width * 3], tempRow, width * 3);
+    }
+    free(tempRow);
+    fclose(file);
+
+    // Swap RGB to BGR and flip vertically
+    for (int i = 0; i < height/2; i++) {
+        for (int j = 0; j < width; j++) {
+            int top = (i * width + j) * 3;
+            int bottom = ((height - 1 - i) * width + j) * 3;
+            
+            // Swap pixels between top and bottom
+            for (int k = 0; k < 3; k++) {
+                unsigned char temp = data[top + k];
+                data[top + k] = data[bottom + (2-k)];
+                data[bottom + (2-k)] = temp;
+            }
+        }
     }
 
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
+    // Set texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-
+    // Load texture data
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     free(data);
-
     return texture;
 }
 
@@ -72,19 +88,18 @@ void Vertex(double th, double ph) {
 }
 
 void Sphere(double x, double y, double z, double radius) {
-    const int stacks = 40;  // Increase detail level
+    const int stacks = 40;
     const int slices = 40;
     
     glPushMatrix();
     glTranslated(x, y, z);
-    glScaled(radius, radius, radius);
     
+    // Draw sphere with proper normal vectors
     for(int i = 0; i < stacks; i++) {
         double lat0 = M_PI * (-0.5 + (double)i / stacks);
+        double lat1 = M_PI * (-0.5 + (double)(i + 1) / stacks);
         double z0 = sin(lat0);
         double zr0 = cos(lat0);
-        
-        double lat1 = M_PI * (-0.5 + (double)(i + 1) / stacks);
         double z1 = sin(lat1);
         double zr1 = cos(lat1);
         
@@ -94,13 +109,19 @@ void Sphere(double x, double y, double z, double radius) {
             double x = cos(lng);
             double y = sin(lng);
             
-            // Normal vector for proper lighting
+            // Normal for the first vertex (normalized position vector is the normal)
             glNormal3d(x * zr0, y * zr0, z0);
-            glVertex3d(x * zr0, y * zr0, z0);
+            if(glIsEnabled(GL_TEXTURE_2D)) {
+                glTexCoord2f((float)j/slices, (float)i/stacks);
+            }
+            glVertex3d(x * zr0 * radius, y * zr0 * radius, z0 * radius);
             
-            // Normal vector for next vertex
+            // Normal for the second vertex
             glNormal3d(x * zr1, y * zr1, z1);
-            glVertex3d(x * zr1, y * zr1, z1);
+            if(glIsEnabled(GL_TEXTURE_2D)) {
+                glTexCoord2f((float)j/slices, (float)(i+1)/stacks);
+            }
+            glVertex3d(x * zr1 * radius, y * zr1 * radius, z1 * radius);
         }
         glEnd();
     }
