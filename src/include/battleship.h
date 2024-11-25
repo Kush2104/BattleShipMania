@@ -15,8 +15,8 @@
 #define PITCH_RETURN_SPEED 2.0  // Speed at which pitch returns to neutral
 #define ROLL_RETURN_SPEED 2.0  // Speed at which roll returns to neutral
 
-#define SHIP_START_X 1000.0f  // Starting X position
-#define SHIP_START_Z 1000.0f 
+#define SHIP_START_X 2000.0f  // Starting X position
+#define SHIP_START_Z 2000.0f 
 
 #define M_PI 3.14159265358979323846
 
