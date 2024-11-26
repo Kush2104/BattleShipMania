@@ -6,6 +6,7 @@
 #include "include/celestial.h"
 
 extern Asteroid* asteroids;
+extern int asteroidBeltInitialized;
 
 void reshape(int width, int height) {
     glViewport(0, 0, width, height);
@@ -19,10 +20,10 @@ void reshape(int width, int height) {
 void update(int value) {
     // Update ship state and movement
     updateMovement();
-    UpdateShipState();
+    UpdateShipState();  // This now includes bullet-asteroid collision checks
     
-    // Check for collisions between bullets and asteroids
-    checkBulletAsteroidCollisions();
+    // Update solar system
+    updateSolarSystem();
     
     glutPostRedisplay();
     glutTimerFunc(16, update, 0);  // ~60 FPS
@@ -36,14 +37,13 @@ int main(int argc, char **argv) {
 
     // Initialize OpenGL settings
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_POINT_SMOOTH);  // Smooth star points
+    glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
     glPointSize(1.0); 
 
     // Initialize game components
     initStars();
     initSolarSystem();
-
     initializeInput();
 
     // Set up display callbacks
@@ -53,6 +53,9 @@ int main(int argc, char **argv) {
     glutTimerFunc(0, update, 0);
 
     glutMainLoop();
+    
+    // Add cleanup
     cleanupAsteroids();
+    
     return 0;
 }

@@ -1,6 +1,5 @@
 #include <math.h>
 #include "include/battleship.h"
-#include "include/celestial.h"
 #include "include/utils.h"
 #include "include/init.h"
 
@@ -94,6 +93,42 @@ void UpdateBullets(void) {
     }
 }
 
+void checkBulletAsteroidCollisions(void) {
+    extern Asteroid* asteroids;
+    extern int asteroidBeltInitialized;
+    
+    if (!asteroidBeltInitialized || asteroids == NULL) return;
+    
+    for (int i = 0; i < MAX_BULLETS; i++) {
+        if (!bullets[i].active) continue;
+        
+        for (int j = 0; j < NUM_ASTEROIDS; j++) {
+            if (!asteroids[j].active || asteroids[j].fragmentsActive) continue;
+            
+            float dx = bullets[i].x - asteroids[j].x;
+            float dy = bullets[i].y - asteroids[j].y;
+            float dz = bullets[i].z - asteroids[j].z;
+            float distSq = dx*dx + dy*dy + dz*dz;
+            float collisionRadius = MAX_ASTEROID_RADIUS * 1.5f;
+            
+            if (distSq < (collisionRadius * collisionRadius)) {
+                // Hit detected!
+                printf("Hit asteroid %d! Health: %d\n", j, asteroids[j].health);  // Debug print
+                
+                bullets[i].active = 0;
+                asteroids[j].health--;
+                
+                if (asteroids[j].health <= 0) {
+                    printf("Asteroid %d destroyed!\n", j);  // Debug print
+                    asteroids[j].active = 0;
+                    initFragments(&asteroids[j]);
+                }
+                break;
+            }
+        }
+    }
+}
+
 void MoveShip(float dx, float dz) {
     float angle = -shipState.yaw * M_PI / 180.0f;  // Negative yaw for correct direction
     float pitchRad = shipState.pitch * M_PI / 180.0f;
@@ -165,9 +200,10 @@ void UpdateShipState(void) {
     // Update roll state
     UpdateRoll();
     
-    // Update bullets - always update bullets regardless of movement
+    // Update bullets
     UpdateBullets();
-
+    
+    // Check for collisions
     checkBulletAsteroidCollisions();
 }
 
@@ -292,6 +328,7 @@ void drawBattleship(void) {
         }
     }
 }
+
 void SetupCamera(void) {
     float camDist = 10.0f;    // Distance behind ship
     float camHeight = 2.0f;   // Height above ship
@@ -309,36 +346,4 @@ void SetupCamera(void) {
     gluLookAt(camX, camY, camZ,                    // Camera position
               shipState.x, shipState.y, shipState.z,// Look at ship
               0, 1, 0);                            // Up vector
-}
-
-void checkBulletAsteroidCollisions(void) {
-    if (!asteroidBeltInitialized) return;  // Don't check if asteroids aren't initialized
-    
-    for (int i = 0; i < MAX_BULLETS; i++) {
-        if (!bullets[i].active) continue;
-        
-        for (int j = 0; j < NUM_ASTEROIDS; j++) {
-            if (!asteroids[j].active || asteroids[j].explosion.active) continue;
-            
-            // Simple distance check for collision
-            float dx = bullets[i].x - asteroids[j].x;
-            float dy = bullets[i].y - asteroids[j].y;
-            float dz = bullets[i].z - asteroids[j].z;
-            float distSq = dx*dx + dy*dy + dz*dz;
-            float collisionRadius = MAX_ASTEROID_RADIUS * 1.5f;  // Slightly larger for better gameplay
-            
-            if (distSq < (collisionRadius * collisionRadius)) {
-                // Collision detected!
-                bullets[i].active = 0;  // Deactivate bullet
-                asteroids[j].active = 0;  // Destroy asteroid
-                
-                // Start explosion effect
-                initExplosion(&asteroids[j].explosion, 
-                            asteroids[j].x,
-                            asteroids[j].y,
-                            asteroids[j].z);
-                break;
-            }
-        }
-    }
 }
