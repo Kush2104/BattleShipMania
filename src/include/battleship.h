@@ -19,15 +19,20 @@
 #define SHIP_START_Z 2000.0f 
 
 #define INITIAL_HEALTH 5
-#define ASTEROID_DAMAGE 1
-#define PLANET_DAMAGE 5
+#define SUN_DAMAGE 10        // Instant death
+#define COMET_DAMAGE 3       // Significant damage
+#define STATION_DAMAGE 2     // Medium damage
+#define ASTEROID_DAMAGE 1    // Small damage
+#define PLANET_DAMAGE 5 
 #define COLLISION_INVULNERABILITY_TIME 60  // Frames of invulnerability after hit
-#define COLLISION_CHECK_RADIUS 20.0f  // Radius for checking collisions
+#define COLLISION_CHECK_RADIUS 5.0f  // Radius for checking collisions
 
-#define EXPLOSION_PARTICLE_COUNT 300  // More particles
-#define EXPLOSION_LIFETIME 120        // Shorter but more intense
-#define INITIAL_EXPLOSION_SIZE 5.0f   // Bigger initial size
-#define EXPLOSION_SPREAD 8.0f 
+#define EXPLOSION_PARTICLE_COUNT 1000   // More particles for bigger explosion
+#define EXPLOSION_LIFETIME 1000          // 4 seconds at 60fps
+#define INITIAL_EXPLOSION_SIZE 4.0f     // Much bigger initial size
+#define EXPLOSION_SPREAD 20.0f          // Much wider spread
+#define SHOCKWAVE_COUNT 3              // Multiple shockwave rings
+#define MUSHROOM_CLOUD_PARTICLES 400
 
 extern int gameOver;
 
@@ -47,6 +52,9 @@ typedef struct {
     int invulnerabilityFrames;
     int explosionTimer;
     ExplosionParticle* explosionParticles;
+    int explosionStage;     // Current stage of explosion
+    float shockwaveSize;    // Size of expanding shockwave
+    int explosionFlashTime;
 } ShipHealth;
 
 typedef struct {

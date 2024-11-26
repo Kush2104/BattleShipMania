@@ -27,6 +27,9 @@ void initializeShipHealth(void) {
     shipHealth.invulnerabilityFrames = 0;
     shipHealth.explosionTimer = 0;
     shipHealth.explosionParticles = NULL;
+    shipHealth.explosionStage = 0;
+    shipHealth.shockwaveSize = 0;
+    shipHealth.explosionFlashTime = 0;
 }
 
 void damageShip(int damage) {
@@ -46,19 +49,18 @@ void damageShip(int damage) {
 }
 
 void createShipExplosion(void) {
-    // Clean up any existing explosion particles first
     cleanupShipHealth();
     
     shipHealth.isExploding = 1;
     shipHealth.explosionTimer = EXPLOSION_LIFETIME;
-    gameOver = 0;
+    shipHealth.explosionStage = 0;
+    shipHealth.shockwaveSize = 0.0f;
+    shipHealth.explosionFlashTime = 30; // Half second flash
     
-    // Store ship's position at time of explosion
     float explosionX = shipState.x;
     float explosionY = shipState.y;
     float explosionZ = shipState.z;
     
-    // Allocate memory for explosion particles
     shipHealth.explosionParticles = (ExplosionParticle*)malloc(
         sizeof(ExplosionParticle) * EXPLOSION_PARTICLE_COUNT);
     
@@ -67,44 +69,57 @@ void createShipExplosion(void) {
         return;
     }
     
-    // Create large initial flash
-    printf("Ship exploding at position: %f, %f, %f\n", explosionX, explosionY, explosionZ);
-    
+    // Initialize particles in layers for mushroom cloud effect
     for (int i = 0; i < EXPLOSION_PARTICLE_COUNT; i++) {
         ExplosionParticle* p = &shipHealth.explosionParticles[i];
         
-        // Start particles in a sphere around explosion center
         float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
-        float elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
-        float distance = ((float)rand() / RAND_MAX) * 2.0f;
+        float elevation;
+        float speed;
         
-        p->x = explosionX + cos(angle) * cos(elevation) * distance;
-        p->y = explosionY + sin(elevation) * distance;
-        p->z = explosionZ + sin(angle) * cos(elevation) * distance;
+        if (i < MUSHROOM_CLOUD_PARTICLES) {
+            // Mushroom cloud cap particles
+            elevation = ((float)rand() / RAND_MAX) * M_PI * 0.25f + M_PI * 0.25f;
+            speed = 10.0f + ((float)rand() / RAND_MAX) * 20.0f;
+        } else {
+            // Regular explosion particles
+            elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
+            speed = 5.0f + ((float)rand() / RAND_MAX) * 15.0f;
+        }
         
-        // Velocity outward from center
-        float speed = 5.0f + ((float)rand() / RAND_MAX) * 10.0f;
+        p->x = explosionX;
+        p->y = explosionY;
+        p->z = explosionZ;
+        
         p->vx = cos(angle) * cos(elevation) * speed;
         p->vy = sin(elevation) * speed;
         p->vz = sin(angle) * cos(elevation) * speed;
         
-        // Larger initial size
-        p->size = INITIAL_EXPLOSION_SIZE * (0.5f + ((float)rand() / RAND_MAX));
-        p->lifetime = EXPLOSION_LIFETIME * (0.5f + ((float)rand() / RAND_MAX) * 0.5f);
+        p->size = INITIAL_EXPLOSION_SIZE * (0.8f + ((float)rand() / RAND_MAX) * 0.4f);
+        p->lifetime = EXPLOSION_LIFETIME * (0.3f + ((float)rand() / RAND_MAX) * 0.7f);
         
-        // More dramatic colors
-        if (i < EXPLOSION_PARTICLE_COUNT / 3) {  // One third bright white-yellow
+        // Color distribution for nuclear effect
+        if (i < EXPLOSION_PARTICLE_COUNT / 4) {
+            // Core: Intense white-yellow
             p->r = 1.0f;
             p->g = 1.0f;
-            p->b = 0.8f;
-        } else if (i < EXPLOSION_PARTICLE_COUNT * 2/3) {  // One third orange
+            p->b = 0.9f;
+        } else if (i < EXPLOSION_PARTICLE_COUNT * 2/4) {
+            // Mid: Bright orange-yellow
             p->r = 1.0f;
-            p->g = 0.5f + ((float)rand() / RAND_MAX) * 0.3f;
-            p->b = 0.0f;
-        } else {  // One third dark red
+            p->g = 0.8f + ((float)rand() / RAND_MAX) * 0.2f;
+            p->b = 0.2f;
+        } else if (i < EXPLOSION_PARTICLE_COUNT * 3/4) {
+            // Outer: Deep orange-red
             p->r = 1.0f;
-            p->g = 0.2f + ((float)rand() / RAND_MAX) * 0.2f;
+            p->g = 0.4f + ((float)rand() / RAND_MAX) * 0.3f;
             p->b = 0.0f;
+        } else {
+            // Smoke: Dark grey with slight orange tint
+            float grey = 0.3f + ((float)rand() / RAND_MAX) * 0.2f;
+            p->r = grey + 0.1f;
+            p->g = grey;
+            p->b = grey - 0.1f;
         }
         p->a = 1.0f;
     }
@@ -114,34 +129,64 @@ void updateShipExplosion(void) {
     if (!shipHealth.isExploding || !shipHealth.explosionParticles) return;
     
     shipHealth.explosionTimer--;
+    if (shipHealth.explosionFlashTime > 0) shipHealth.explosionFlashTime--;
     
+    // Update shockwave (faster expansion)
+    shipHealth.shockwaveSize += 2.0f;
+    
+    // Update particles with mushroom cloud behavior
     for (int i = 0; i < EXPLOSION_PARTICLE_COUNT; i++) {
         ExplosionParticle* p = &shipHealth.explosionParticles[i];
         if (p->lifetime <= 0) continue;
         
-        // Update position with velocity
+        // More dramatic particle movement
         p->x += p->vx * 0.3f;
         p->y += p->vy * 0.3f;
         p->z += p->vz * 0.3f;
         
-        // Add gravity and drag
-        p->vy -= 0.15f;
-        p->vx *= 0.98f;
-        p->vy *= 0.98f;
-        p->vz *= 0.98f;
+        // Mushroom cloud formation
+        if (i < MUSHROOM_CLOUD_PARTICLES && p->y > shipState.y + 10.0f) {
+            float dx = p->x - shipState.x;
+            float dz = p->z - shipState.z;
+            float dist = sqrt(dx * dx + dz * dz);
+            
+            // Spread particles outward at the top
+            if (dist < EXPLOSION_SPREAD * 2) {
+                float angle = atan2(dz, dx);
+                p->vx += cos(angle) * 0.2f;
+                p->vz += sin(angle) * 0.2f;
+            }
+            
+            // Slow vertical velocity at top
+            p->vy *= 0.95f;
+        }
         
-        // Reduce size over time
-        p->size *= 0.98f;
+        // Add turbulence
+        p->x += (((float)rand() / RAND_MAX) - 0.5f) * 0.5f;
+        p->y += (((float)rand() / RAND_MAX) - 0.5f) * 0.5f;
+        p->z += (((float)rand() / RAND_MAX) - 0.5f) * 0.5f;
         
-        // Update alpha based on lifetime
+        // Slow particles gradually
+        p->vx *= 0.99f;
+        p->vy *= 0.99f;
+        p->vz *= 0.99f;
+        
+        // Size and alpha changes
         float lifeRatio = p->lifetime / (float)EXPLOSION_LIFETIME;
-        p->a = lifeRatio * lifeRatio;  // Quadratic falloff
+        p->size *= 0.998f;
+        p->a = lifeRatio * lifeRatio;
         
-        // Decrease lifetime
+        // Color evolution
+        if (i >= EXPLOSION_PARTICLE_COUNT * 3/4) {
+            // Smoke particles get darker
+            p->r *= 0.995f;
+            p->g *= 0.995f;
+            p->b *= 0.995f;
+        }
+        
         p->lifetime--;
     }
     
-    // Only set game over after explosion finishes
     if (shipHealth.explosionTimer <= 0) {
         gameOver = 1;
     }
@@ -152,28 +197,41 @@ void drawShipExplosion(void) {
     
     glPushMatrix();
     
-    // Draw initial flash in first few frames
-    if (shipHealth.explosionTimer > EXPLOSION_LIFETIME - 10) {
+    // Draw initial flash (bigger and brighter)
+    if (shipHealth.explosionFlashTime > 0) {
+        glDisable(GL_LIGHTING);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        glDisable(GL_LIGHTING);
         
-        float flashSize = EXPLOSION_SPREAD * 3.0f;
-        float flashAlpha = (shipHealth.explosionTimer - (EXPLOSION_LIFETIME - 10)) / 10.0f;
-        
+        float flashAlpha = shipHealth.explosionFlashTime / 30.0f;
+        glColor4f(1.0f, 1.0f, 1.0f, flashAlpha);
         glPushMatrix();
         glTranslatef(shipState.x, shipState.y, shipState.z);
-        glColor4f(1.0f, 0.9f, 0.3f, flashAlpha);
-        glutSolidSphere(flashSize, 16, 16);
+        glutSolidSphere(EXPLOSION_SPREAD * 2, 32, 32);
         glPopMatrix();
     }
     
-    // Draw particles
+    // Draw multiple expanding shockwaves
+    for (int i = 0; i < SHOCKWAVE_COUNT; i++) {
+        float offset = (float)i * (EXPLOSION_SPREAD * 2.0f / SHOCKWAVE_COUNT);
+        float currentSize = shipHealth.shockwaveSize - offset;
+        
+        if (currentSize > 0 && currentSize < EXPLOSION_SPREAD * 6.0f) {
+            float shockwaveAlpha = 1.0f - (currentSize / (EXPLOSION_SPREAD * 6.0f));
+            glColor4f(1.0f, 0.8f, 0.5f, shockwaveAlpha * 0.5f);
+            
+            glPushMatrix();
+            glTranslatef(shipState.x, shipState.y, shipState.z);
+            glutSolidTorus(0.2f, currentSize, 32, 32);
+            glPopMatrix();
+        }
+    }
+    
+    // Draw explosion particles
+    glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    glDisable(GL_LIGHTING);
     
-    // Draw main explosion particles
     for (int i = 0; i < EXPLOSION_PARTICLE_COUNT; i++) {
         ExplosionParticle* p = &shipHealth.explosionParticles[i];
         if (p->lifetime <= 0) continue;
@@ -181,46 +239,21 @@ void drawShipExplosion(void) {
         glPushMatrix();
         glTranslatef(p->x, p->y, p->z);
         
-        // Billboarding - make particles face camera
+        // Billboarding
         glRotatef(-shipState.yaw, 0, 1, 0);
         glRotatef(-shipState.pitch, 0, 0, 1);
         
         glColor4f(p->r, p->g, p->b, p->a);
         
-        // Draw particle as two crossed triangles for better visibility
-        float size = p->size;
-        glBegin(GL_TRIANGLES);
-        // First triangle
-        glVertex3f(-size, -size, 0);
-        glVertex3f(size, -size, 0);
-        glVertex3f(0, size, 0);
-        // Second triangle (crossed)
-        glVertex3f(-size, size, 0);
-        glVertex3f(size, size, 0);
-        glVertex3f(0, -size, 0);
-        glEnd();
+        float size = p->size * (1.0f + (float)(i < MUSHROOM_CLOUD_PARTICLES) * 0.5f);
         
-        glPopMatrix();
-    }
-    
-    // Draw smoke particles
-    for (int i = 0; i < EXPLOSION_PARTICLE_COUNT; i += 2) {
-        ExplosionParticle* p = &shipHealth.explosionParticles[i];
-        if (p->lifetime <= 0) continue;
-        
-        glPushMatrix();
-        // Fixed: Use p->size instead of undefined size
-        glTranslatef(p->x, p->y + p->size * 0.5f, p->z);
-        glRotatef(-shipState.yaw, 0, 1, 0);
-        
-        float smokeAlpha = p->a * 0.4f;
-        glColor4f(0.2f, 0.2f, 0.2f, smokeAlpha);
-        float smokeSize = p->size * 2.0f;  // Double the particle's size for smoke
-        
-        glBegin(GL_TRIANGLES);
-        glVertex3f(-smokeSize, -smokeSize, 0);
-        glVertex3f(smokeSize, -smokeSize, 0);
-        glVertex3f(0, smokeSize, 0);
+        // Draw larger, more dramatic particles
+        glBegin(GL_TRIANGLE_FAN);
+        glVertex3f(0, 0, 0);  // Center
+        for (int j = 0; j <= 12; j++) {
+            float angle = j * (2 * M_PI / 12);
+            glVertex3f(cos(angle) * size, sin(angle) * size, 0);
+        }
         glEnd();
         
         glPopMatrix();
@@ -247,30 +280,113 @@ void checkShipCollisions(void) {
             float dz = shipState.z - asteroids[i].z;
             float distSq = dx*dx + dy*dy + dz*dz;
             
-            if (distSq < (COLLISION_CHECK_RADIUS * COLLISION_CHECK_RADIUS)) {
+            float asteroidRadius = MIN_ASTEROID_RADIUS + 
+                ((float)rand() / RAND_MAX) * (MAX_ASTEROID_RADIUS - MIN_ASTEROID_RADIUS);
+            float collisionDistance = COLLISION_CHECK_RADIUS + asteroidRadius;
+            
+            if (distSq < (collisionDistance * collisionDistance)) {
                 damageShip(ASTEROID_DAMAGE);
+                printf("Ship collided with asteroid! Distance: %f\n", sqrt(distSq));
                 break;
             }
         }
     }
     
-    // Check planet collisions
+    // Check all celestial bodies
     extern CelestialBody solarBodies[];
     extern int bodyCount;
     
     for (int i = 0; i < bodyCount; i++) {
         CelestialBody* body = &solarBodies[i];
-        if (body->type != CELESTIAL_PLANET && body->type != CELESTIAL_SUN) continue;
-        
         float dx = shipState.x - body->x;
         float dy = shipState.y - body->y;
         float dz = shipState.z - body->z;
         float distSq = dx*dx + dy*dy + dz*dz;
-        float collisionRadius = body->radius + COLLISION_CHECK_RADIUS;
+        float collisionRadius;
+        int damage = 0;
         
-        if (distSq < (collisionRadius * collisionRadius)) {
-            damageShip(PLANET_DAMAGE);  // Instant death for planet collision
-            break;
+        switch(body->type) {
+            case CELESTIAL_SUN:
+                collisionRadius = body->radius * 0.9f; // Slightly smaller than visual radius
+                damage = SUN_DAMAGE;
+                break;
+                
+            case CELESTIAL_PLANET:
+                collisionRadius = body->radius + COLLISION_CHECK_RADIUS;
+                damage = PLANET_DAMAGE;
+                break;
+                
+            case CELESTIAL_SPACE_STATION:
+                collisionRadius = body->radius * 1.5f; // Larger collision box for station
+                damage = STATION_DAMAGE;
+                break;
+                
+            case CELESTIAL_COMET:
+                // For comet, check both head and tail collision
+                float cometHeadRadius = body->radius;
+                float tailLength = body->radius * 30.0f; // Match the comet's tail length
+                
+                // Check head collision first
+                if (distSq < (cometHeadRadius * cometHeadRadius)) {
+                    damageShip(COMET_DAMAGE);
+                    printf("Ship collided with comet head! Distance: %f\n", sqrt(distSq));
+                    continue;
+                }
+                
+                // Check tail collision using a cone shape
+                float angleToShip = atan2(dz, dx);
+                float cometAngle = body->orbitAngle * M_PI / 180.0f;
+                float angleDiff = fabs(angleToShip - cometAngle);
+                while (angleDiff > M_PI) angleDiff = 2 * M_PI - angleDiff;
+                
+                // If within tail angle and distance
+                if (angleDiff < M_PI/6 && // 30-degree cone
+                    distSq < (tailLength * tailLength) &&
+                    distSq > (cometHeadRadius * cometHeadRadius)) {
+                    damageShip(COMET_DAMAGE/2); // Less damage for tail collision
+                    printf("Ship collided with comet tail! Distance: %f\n", sqrt(distSq));
+                }
+                continue;
+                
+            default:
+                continue; // Skip other types
+        }
+        
+        if (damage > 0 && distSq < (collisionRadius * collisionRadius)) {
+            damageShip(damage);
+            const char* bodyType;
+            switch(body->type) {
+                case CELESTIAL_SUN: bodyType = "sun"; break;
+                case CELESTIAL_PLANET: bodyType = "planet"; break;
+                case CELESTIAL_SPACE_STATION: bodyType = "space station"; break;
+                default: bodyType = "unknown"; break;
+            }
+            printf("Ship collided with %s (%s)! Distance: %f\n", 
+                   body->name ? body->name : "unnamed",
+                   bodyType,
+                   sqrt(distSq));
+            
+            // Special effects for different collisions
+            switch(body->type) {
+                case CELESTIAL_SUN:
+                    // Instant explosion effect
+                    shipHealth.health = 0;
+                    if (!shipHealth.isExploding) {
+                        createShipExplosion();
+                    }
+                    break;
+                    
+                case CELESTIAL_SPACE_STATION:
+                    // Maybe add some spark effects here
+                    // For now, just applying damage is enough
+                    break;
+                    
+                case CELESTIAL_PLANET:
+                    // Already handled by damage system
+                    break;
+            }
+            
+            break; // Exit after first collision
         }
     }
 }
@@ -411,6 +527,10 @@ void cleanupShipHealth(void) {
         shipHealth.explosionParticles = NULL;
     }
     shipHealth.isExploding = 0;
+    shipHealth.explosionTimer = 0;
+    shipHealth.explosionStage = 0;
+    shipHealth.shockwaveSize = 0;
+    shipHealth.explosionFlashTime = 0;
 }
 
 void resetShipPosition(void) {
@@ -452,11 +572,11 @@ void DrawBullet(float x, float y, float z) {
     
     // Bright orange core
     glColor4f(1.0, 0.6, 0.0, 1.0);
-    Sphere(0, 0, 0, 0.08);
+    Sphere(0, 0, 0, 0.04);  // Increased from 0.02
     
     // Orange glow
     glColor4f(1.0, 0.3, 0.0, 0.6);
-    Sphere(0, 0, 0, 0.12);
+    Sphere(0, 0, 0, 0.06);  // Increased from 0.03
     
     glDisable(GL_BLEND);
     glPopMatrix();
@@ -656,7 +776,7 @@ void drawBattleship(void) {
     glEnable(GL_COLOR_MATERIAL);
     
     // Increase base ambient light for better visibility
-    GLfloat mat_ambient[] = { 0.4f, 0.4f, 0.4f, 1.0f };  // Doubled ambient values
+    GLfloat mat_ambient[] = { 0.4f, 0.4f, 0.4f, 1.0f };
     GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat mat_specular[] = { 0.5f, 0.5f, 0.5f, 1.0f };
     GLfloat mat_shininess[] = { 32.0f };
@@ -667,21 +787,21 @@ void drawBattleship(void) {
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
     
     // Main fuselage - lighter metallic silver-gray
-    glColor3f(0.7, 0.72, 0.75);  // Much lighter base color
+    glColor3f(0.7, 0.72, 0.75);
     GLfloat fuselage_spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, fuselage_spec);
-    Cube(0, 0, 0, 2.0, 0.2, 0.5, 0, 0, 1, 0);  // Main body
+    Cube(0, 0, 0, 1.0, 0.1, 0.25, 0, 0, 1, 0);  // Main body
     
     // Nose section - slightly darker but still visible
-    glColor3f(0.65, 0.67, 0.7);  // Lighter nose color
+    glColor3f(0.65, 0.67, 0.7);
     GLfloat nose_spec[] = { 0.7f, 0.7f, 0.7f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, nose_spec);
-    Cube(-1.8, 0.1, 0, 0.4, 0.15, 0.3, 15, 0, 1, 0);  // Upper nose
-    Cube(-1.8, -0.05, 0, 0.4, 0.1, 0.4, -10, 0, 1, 0);  // Lower nose
+    Cube(-0.9, 0.05, 0, 0.2, 0.075, 0.15, 15, 0, 1, 0);  // Upper nose
+    Cube(-0.9, -0.025, 0, 0.2, 0.05, 0.2, -10, 0, 1, 0);  // Lower nose
     
     // Cockpit - bright reflective glass
-    GLfloat glass_ambient[] = { 0.2f, 0.3f, 0.4f, 1.0f };  // Increased ambient
-    GLfloat glass_diffuse[] = { 0.4f, 0.7f, 0.9f, 0.8f };  // Brighter blue
+    GLfloat glass_ambient[] = { 0.2f, 0.3f, 0.4f, 1.0f };
+    GLfloat glass_diffuse[] = { 0.4f, 0.7f, 0.9f, 0.8f };
     GLfloat glass_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat glass_shininess[] = { 128.0f };
     
@@ -692,65 +812,65 @@ void drawBattleship(void) {
     
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Cube(-1.0, 0.2, 0, 0.6, 0.1, 0.3, 5, 0, 1, 0);  // Canopy
+    Cube(-0.5, 0.1, 0, 0.3, 0.05, 0.15, 5, 0, 1, 0);  // Canopy
     glDisable(GL_BLEND);
     
     // Wings - lighter metallic with subtle color variation
-    glColor3f(0.68, 0.7, 0.73);  // Slightly different shade for visual interest
+    glColor3f(0.68, 0.7, 0.73);
     GLfloat wing_spec[] = { 0.6f, 0.6f, 0.6f, 1.0f };
     GLfloat wing_shininess[] = { 16.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, wing_spec);
     glMaterialfv(GL_FRONT, GL_SHININESS, wing_shininess);
     
     // Left wing
-    Cube(-0.2, 0, -1.2, 1.2, 0.08, 0.8, 10, 0, 1, 0);
+    Cube(-0.1, 0, -0.6, 0.6, 0.04, 0.4, 10, 0, 1, 0);
     // Right wing
-    Cube(-0.2, 0, 1.2, 1.2, 0.08, 0.8, -10, 0, 1, 0);
+    Cube(-0.1, 0, 0.6, 0.6, 0.04, 0.4, -10, 0, 1, 0);
     
     // Wing tips - accented edges
-    glColor3f(0.75, 0.77, 0.8);  // Slightly lighter for emphasis
+    glColor3f(0.75, 0.77, 0.8);
     GLfloat tip_spec[] = { 0.7f, 0.7f, 0.7f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, tip_spec);
     // Left tip
-    Cube(-0.2, 0.2, -1.6, 0.4, 0.3, 0.08, 60, 0, 0, 1);
+    Cube(-0.1, 0.1, -0.8, 0.2, 0.15, 0.04, 60, 0, 0, 1);
     // Right tip
-    Cube(-0.2, 0.2, 1.6, 0.4, 0.3, 0.08, -60, 0, 0, 1);
+    Cube(-0.1, 0.1, 0.8, 0.2, 0.15, 0.04, -60, 0, 0, 1);
     
     // Tail section - bright metallic
     glColor3f(0.72, 0.74, 0.77);
     GLfloat tail_spec[] = { 0.7f, 0.7f, 0.7f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, tail_spec);
-    Cube(1.5, 0.3, 0, 0.4, 0.4, 0.08, 30, 0, 0, 1);  // Center tail
+    Cube(0.75, 0.15, 0, 0.2, 0.2, 0.04, 30, 0, 0, 1);  // Center tail
     // Horizontal stabilizers
-    Cube(1.2, 0, -0.8, 0.6, 0.08, 0.4, 15, 1, 0, 0);  // Left
-    Cube(1.2, 0, 0.8, 0.6, 0.08, 0.4, -15, 1, 0, 0);  // Right
+    Cube(0.6, 0, -0.4, 0.3, 0.04, 0.2, 15, 1, 0, 0);  // Left
+    Cube(0.6, 0, 0.4, 0.3, 0.04, 0.2, -15, 1, 0, 0);  // Right
     
     // Engine nozzles - darker contrast but still visible
-    glColor3f(0.45, 0.47, 0.5);  // Darker but not black
+    glColor3f(0.45, 0.47, 0.5);
     GLfloat engine_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
     GLfloat engine_shininess[] = { 64.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, engine_spec);
     glMaterialfv(GL_FRONT, GL_SHININESS, engine_shininess);
-    Cylinder(1.8, -0.1, -0.3, 0.15, 0.3);  // Left engine
-    Cylinder(1.8, -0.1, 0.3, 0.15, 0.3);   // Right engine
+    Cylinder(0.9, -0.05, -0.15, 0.075, 0.15);  // Left engine
+    Cylinder(0.9, -0.05, 0.15, 0.075, 0.15);   // Right engine
     
     // Engine glow - brighter emission
-    GLfloat glow_emission[] = { 1.0f, 0.6f, 0.2f, 1.0f };  // Brighter orange glow
+    GLfloat glow_emission[] = { 1.0f, 0.6f, 0.2f, 1.0f };
     glMaterialfv(GL_FRONT, GL_EMISSION, glow_emission);
-    Cylinder(2.0, -0.1, -0.3, 0.1, 0.1);  // Left glow
-    Cylinder(2.0, -0.1, 0.3, 0.1, 0.1);   // Right glow
+    Cylinder(1.0, -0.05, -0.15, 0.05, 0.05);  // Left glow
+    Cylinder(1.0, -0.05, 0.15, 0.05, 0.05);   // Right glow
     
     // Reset emission
     GLfloat no_emission[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     glMaterialfv(GL_FRONT, GL_EMISSION, no_emission);
     
     // Front laser cannon - bright metallic
-    glColor3f(0.6, 0.62, 0.65);  // Lighter cannon color
+    glColor3f(0.6, 0.62, 0.65);
     GLfloat cannon_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
     GLfloat cannon_shininess[] = { 96.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, cannon_spec);
     glMaterialfv(GL_FRONT, GL_SHININESS, cannon_shininess);
-    Cylinder(-2.0, 0, 0, 0.1, 0.2);  // Cannon housing
+    Cylinder(-1.0, 0, 0, 0.05, 0.1);  // Cannon housing
     
     glDisable(GL_LIGHTING);
     glPopMatrix();
@@ -764,11 +884,11 @@ void drawBattleship(void) {
 }
 
 void SetupCamera(void) {
-    float camDist = 10.0f;    // Distance behind ship
-    float camHeight = 2.0f;   // Height above ship
+    float camDist = 5.0f;    // Reduced from 10.0f - closer to ship
+    float camHeight = 1.0f;   // Reduced from 2.0f - lower camera angle
     
     // Calculate camera position based on ship's orientation
-    float shipRad = -shipState.yaw * M_PI / 180.0f;  // Negative yaw for correct camera placement
+    float shipRad = -shipState.yaw * M_PI / 180.0f;
     float pitchRad = shipState.pitch * M_PI / 180.0f;
     
     // Calculate camera position

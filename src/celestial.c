@@ -258,6 +258,173 @@ void initSolarSystem(void) {
     comet->color[3] = 1.0f;
     comet->name = "Halley's Comet";
     comet->specialEffectTimer = 0;
+
+    CelestialBody* spaceStation = &solarBodies[bodyCount++];
+    spaceStation->originalRadius = REAL_EARTH_RADIUS * 0.002f;
+    spaceStation->radius = 5.0f;
+    spaceStation->rotationSpeed = 0.5f;  // Controls how fast it orbits around Earth
+    spaceStation->currentRotation = 0;
+    spaceStation->type = CELESTIAL_SPACE_STATION;
+    spaceStation->color[0] = spaceStation->color[1] = spaceStation->color[2] = 0.8f;
+    spaceStation->color[3] = 1.0f;
+    spaceStation->name = "ISS";
+}
+
+void drawSpaceStation(CelestialBody* station) {
+    glPushMatrix();
+    
+    // Get Earth's current position (Earth is index 3 in solarBodies array)
+    CelestialBody* earth = &solarBodies[3];
+    
+    // Calculate position slightly offset from Earth's position
+    // This keeps the station in a small orbit around Earth
+    float offsetAngle = station->currentRotation * M_PI / 180.0f;
+    float orbitOffset = 60.0f;  // Distance from Earth's center
+    
+    // Calculate station position relative to Earth
+    station->x = earth->x + orbitOffset * cos(offsetAngle);
+    station->z = earth->z + orbitOffset * sin(offsetAngle);
+    station->y = earth->y + orbitOffset * 0.2f * sin(offsetAngle * 2.0f);  // Small vertical oscillation
+    
+    glTranslatef(station->x, station->y, station->z);
+    glRotatef(station->currentRotation, 0, 1, 0);
+    
+    // Set material properties for metallic look
+    GLfloat mat_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
+    GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    GLfloat mat_specular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+    GLfloat mat_shininess[] = { 64.0f };
+    
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+    
+    float baseSize = station->radius * 0.15f; // Base unit for scaling
+
+    // Main truss structure (integrated truss structure - ITS)
+    glColor3f(0.7f, 0.7f, 0.7f);
+    // Central truss beam
+    Cube(0, 0, 0, baseSize * 10, baseSize, baseSize, 0, 0, 0, 1);
+    
+    // Cross beams along the truss
+    for (int i = -5; i <= 5; i++) {
+        Cube(i * baseSize * 2, 0, 0, 
+             baseSize * 0.5f, baseSize, baseSize * 3, 
+             0, 0, 0, 1);
+    }
+    
+    // Pressurized modules (cylindrical segments)
+    glColor3f(0.85f, 0.85f, 0.85f);
+    
+    // Destiny (US Lab)
+    Cylinder(-baseSize * 2, 0, 0, baseSize * 2, baseSize * 6);
+    
+    // Unity (Node 1)
+    Cylinder(-baseSize * 8, 0, 0, baseSize * 2, baseSize * 4);
+    
+    // Zvezda (Service Module)
+    Cylinder(baseSize * 4, 0, 0, baseSize * 2, baseSize * 6);
+    
+    // Solar array wings
+    glColor3f(0.2f, 0.3f, 0.8f); // Blue-tinted solar panels
+    float panelWidth = baseSize * 8;
+    float panelHeight = baseSize * 0.1f;
+    float panelLength = baseSize * 20;
+    
+    // Port side arrays
+    for (int i = -1; i <= 1; i += 2) {
+        glPushMatrix();
+        glTranslatef(i * baseSize * 4, 0, baseSize * 12);
+        // Support structure
+        glColor3f(0.7f, 0.7f, 0.7f);
+        Cube(0, 0, -baseSize * 11, 
+             baseSize * 0.5f, baseSize * 0.5f, baseSize, 
+             0, 0, 0, 1);
+        // Panel
+        glColor3f(0.2f, 0.3f, 0.8f);
+        Cube(0, 0, 0, 
+             panelWidth, panelHeight, panelLength,
+             0, 0, 0, 1);
+        glPopMatrix();
+        
+        // Starboard side arrays
+        glPushMatrix();
+        glTranslatef(i * baseSize * 4, 0, -baseSize * 12);
+        // Support structure
+        glColor3f(0.7f, 0.7f, 0.7f);
+        Cube(0, 0, baseSize * 11, 
+             baseSize * 0.5f, baseSize * 0.5f, baseSize,
+             0, 0, 0, 1);
+        // Panel
+        glColor3f(0.2f, 0.3f, 0.8f);
+        Cube(0, 0, 0,
+             panelWidth, panelHeight, panelLength,
+             0, 0, 0, 1);
+        glPopMatrix();
+    }
+    
+    // Radiators (heat rejection system)
+    glColor3f(0.9f, 0.9f, 0.9f);
+    for (int i = -1; i <= 1; i += 2) {
+        Cube(i * baseSize * 4, baseSize * 3, 0,
+             baseSize * 0.2f, baseSize * 4, baseSize * 8,
+             0, 0, 0, 1);
+    }
+    
+    // Soyuz/Progress vehicles (docked spacecraft)
+    glColor3f(0.75f, 0.75f, 0.75f);
+    // Forward docking port
+    Cone(baseSize * 8, 0, 0, baseSize * 1.5f, baseSize * 3);
+    Cylinder(baseSize * 9.5f, 0, 0, baseSize, baseSize * 2);
+    
+    // Aft docking port
+    Cone(-baseSize * 12, 0, 0, baseSize * 1.5f, baseSize * 3);
+    Cylinder(-baseSize * 13.5f, 0, 0, baseSize, baseSize * 2);
+    
+    // Cupola (observation module)
+    glColor3f(0.6f, 0.6f, 0.6f);
+    glPushMatrix();
+    glTranslatef(0, -baseSize * 2, 0);
+    Cylinder(0, 0, 0, baseSize * 1.5f, baseSize * 1.5f);
+    // Windows
+    glColor3f(0.3f, 0.3f, 0.4f);
+    for (int i = 0; i < 8; i++) {
+        glPushMatrix();
+        glRotatef(i * 45, 0, 1, 0);
+        Cube(baseSize * 1.5f, 0, 0,
+             baseSize * 0.4f, baseSize * 0.4f, baseSize * 0.1f,
+             0, 0, 0, 1);
+        glPopMatrix();
+    }
+    glPopMatrix();
+    
+    // Add Canadarm2 (Mobile Servicing System)
+    glColor3f(0.9f, 0.9f, 0.9f);
+    glPushMatrix();
+    glTranslatef(baseSize * 2, baseSize * 2, 0);
+    // Base joint
+    Sphere(0, 0, 0, baseSize * 0.5f);
+    // Arm segments
+    float angle1 = sin(station->currentRotation * 0.01f) * 30;
+    float angle2 = cos(station->currentRotation * 0.01f) * 45;
+    
+    glRotatef(angle1, 0, 0, 1);
+    Cylinder(0, 0, 0, baseSize * 0.3f, baseSize * 4);
+    glTranslatef(0, baseSize * 4, 0);
+    
+    // Middle joint
+    Sphere(0, 0, 0, baseSize * 0.5f);
+    glRotatef(angle2, 0, 0, 1);
+    
+    // End segment
+    Cylinder(0, 0, 0, baseSize * 0.3f, baseSize * 4);
+    // End effector
+    glTranslatef(0, baseSize * 4, 0);
+    Sphere(0, 0, 0, baseSize * 0.4f);
+    glPopMatrix();
+    
+    glPopMatrix();
 }
 
 void cleanupAsteroids(void) {
@@ -745,6 +912,9 @@ void drawBody(CelestialBody* body) {
     }
     else if(body->type == CELESTIAL_COMET) {
         drawComet(body);
+    }
+    else if(body->type == CELESTIAL_SPACE_STATION) {
+        drawSpaceStation(body);
     }
 }
 
