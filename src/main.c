@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
 
     // Initialize game components
     initStars();
+    initializeShipHealth();
     initSolarSystem();
     initializeInput();
 
@@ -56,6 +57,7 @@ int main(int argc, char **argv) {
     
     // Add cleanup
     cleanupAsteroids();
+    cleanupShipHealth();
     
     return 0;
 }

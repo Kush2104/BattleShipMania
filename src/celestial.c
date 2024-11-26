@@ -244,6 +244,20 @@ void initSolarSystem(void) {
     asteroidBelt->color[0] = asteroidBelt->color[1] = asteroidBelt->color[2] = 0.7f;
     asteroidBelt->color[3] = 1.0f;
     asteroidBelt->name = "Asteroid Belt";
+
+    CelestialBody* comet = &solarBodies[bodyCount++];
+    comet->originalRadius = REAL_EARTH_RADIUS * 0.2f;
+    comet->radius = 25.0f;  // Bigger size
+    comet->orbitRadius = 3000.0f;
+    comet->orbitSpeed = 0.05f;  // Faster speed
+    comet->orbitAngle = 0;
+    comet->rotationSpeed = 0.5f;
+    comet->currentRotation = 0;
+    comet->type = CELESTIAL_COMET;
+    comet->color[0] = comet->color[1] = comet->color[2] = 1.0f;
+    comet->color[3] = 1.0f;
+    comet->name = "Halley's Comet";
+    comet->specialEffectTimer = 0;
 }
 
 void cleanupAsteroids(void) {
@@ -477,6 +491,110 @@ void drawAsteroid(Asteroid* asteroid) {
     glDisable(GL_TEXTURE_2D);
 }
 
+void drawComet(CelestialBody* comet) {
+    glPushMatrix();
+    
+    // Calculate position based on orbit
+    float orbitAngleRad = comet->orbitAngle * M_PI / 180.0f;
+    comet->x = cos(orbitAngleRad) * comet->orbitRadius;
+    comet->z = sin(orbitAngleRad) * comet->orbitRadius;
+    comet->y = sin(orbitAngleRad * 0.5f) * comet->orbitRadius * 0.3f;
+    
+    glTranslatef(comet->x, comet->y, comet->z);
+    
+    // First draw the bright glowing core
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    // Intense bright core
+    glColor4f(1.0f, 0.95f, 0.8f, 1.0f);
+    glutSolidSphere(comet->radius * 0.3f, 20, 20);
+    
+    // Outer glow layers
+    float glowSizes[] = {0.4f, 0.5f, 0.7f};
+    float glowAlphas[] = {0.7f, 0.5f, 0.3f};
+    for(int i = 0; i < 3; i++) {
+        glColor4f(1.0f, 0.95f, 0.8f, glowAlphas[i]);
+        glutSolidSphere(comet->radius * glowSizes[i], 20, 20);
+    }
+    
+    // Draw tail
+    float tailLength = comet->radius * 30.0f;  // Much longer tail
+    float spreadBase = comet->radius * 0.5f;
+    int numParticles = 500;  // More particles
+    
+    glPointSize(2.0f);  // Larger points for better visibility
+    glBegin(GL_POINTS);
+    
+    for(int i = 0; i < numParticles; i++) {
+        float t = (float)i / numParticles;
+        float spread = spreadBase + (t * comet->radius * 2.0f);  // Wider spread further from nucleus
+        
+        // Calculate base position along tail
+        float x = -tailLength * t;
+        
+        // Add random spread
+        float rand1 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
+        float rand2 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
+        float y = rand1 * spread;
+        float z = rand2 * spread;
+        
+        // Vary colors from bright white-blue near nucleus to fainter blue in tail
+        float brightness = 1.0f - (t * 0.8f);
+        float alpha = 1.0f - (t * t);  // Quadratic falloff for smoother fade
+        
+        if(rand() % 4 == 0) {  // 25% chance of bright ice particle
+            glColor4f(1.0f, 1.0f, 1.0f, alpha);
+            glPointSize(3.0f);  // Bigger points for ice
+        } else {
+            glColor4f(0.8f * brightness, 0.9f * brightness, 1.0f, alpha * 0.5f);
+            glPointSize(2.0f);
+        }
+        
+        glVertex3f(x, y, z);
+    }
+    glEnd();
+    
+    // Add a bright central stream
+    glBegin(GL_QUAD_STRIP);
+    float streamWidth = comet->radius * 0.5f;
+    float streamLength = tailLength * 0.7f;
+    int segments = 30;
+    
+    for(int i = 0; i <= segments; i++) {
+        float t = (float)i / segments;
+        float x = -streamLength * t;
+        float alpha = 1.0f - (t * t);  // Quadratic falloff
+        
+        glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.5f);
+        glVertex3f(x, streamWidth * (1.0f - t), 0.0f);
+        glVertex3f(x, -streamWidth * (1.0f - t), 0.0f);
+    }
+    glEnd();
+    
+    // Add some random streaks for additional detail
+    glBegin(GL_LINES);
+    for(int i = 0; i < 50; i++) {  // Add 50 random streaks
+        float t = (float)rand() / RAND_MAX;
+        float x1 = -tailLength * t;
+        float y1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
+        float z1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
+        
+        float length = comet->radius * (1.0f + t);
+        float alpha = 1.0f - t;
+        
+        glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.3f);
+        glVertex3f(x1, y1, z1);
+        glVertex3f(x1 - length, y1, z1);
+    }
+    glEnd();
+    
+    glEnable(GL_LIGHTING);
+    glDisable(GL_BLEND);
+    glPointSize(1.0f);  // Reset point size
+    glPopMatrix();
+}
 void setupSolarLighting(void) {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -624,6 +742,9 @@ void drawBody(CelestialBody* body) {
     }
     else if(body->type == CELESTIAL_ASTEROID) {
         drawAsteroidBelt(body);
+    }
+    else if(body->type == CELESTIAL_COMET) {
+        drawComet(body);
     }
 }
 

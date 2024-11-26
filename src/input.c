@@ -30,6 +30,13 @@ void updateMovement(void) {
 }
 
 void key(unsigned char ch, int x, int y) {
+    if (gameOver && (ch == 'r' || ch == 'R')) {
+        resetGame();
+        return;
+    }
+
+    if (isShipDestroyed() && ch != 27) return;
+    
     switch(ch) {
         case 'w':
         case 'W':
