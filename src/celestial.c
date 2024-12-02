@@ -1,4 +1,3 @@
-// celestial.c
 #include "include/celestial.h"
 
 CelestialBody solarBodies[MAX_BODIES];
@@ -22,17 +21,14 @@ void initFragments(Asteroid* asteroid) {
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
         
-        // Generate smaller vertex set for fragment
         int fragVertices = asteroid->numVertices / 2;
         f->vertices = generateAsteroidVertices(&fragVertices);
         f->numVertices = fragVertices;
         
-        // Start at asteroid's position
         f->x = asteroid->x;
         f->y = asteroid->y;
         f->z = asteroid->z;
         
-        // Random velocity in all directions
         float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
         float elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
         float speed = 1.0f + ((float)rand() / RAND_MAX) * 2.0f;
@@ -41,17 +37,14 @@ void initFragments(Asteroid* asteroid) {
         f->vy = speed * sin(elevation);
         f->vz = speed * sin(angle) * cos(elevation);
         
-        // Random rotation
         f->rotX = ((float)rand() / RAND_MAX) * 360.0f;
         f->rotY = ((float)rand() / RAND_MAX) * 360.0f;
         f->rotZ = ((float)rand() / RAND_MAX) * 360.0f;
         
-        // Random rotation velocities
         f->rotVelX = ((float)rand() / RAND_MAX - 0.5f) * 10.0f;
         f->rotVelY = ((float)rand() / RAND_MAX - 0.5f) * 10.0f;
         f->rotVelZ = ((float)rand() / RAND_MAX - 0.5f) * 10.0f;
         
-        // Random scale between 0.2 and 0.4 of original size
         f->scale = 0.2f + ((float)rand() / RAND_MAX) * 0.2f;
         
         f->lifetime = FRAGMENT_LIFETIME;
@@ -67,20 +60,16 @@ void updateFragments(Asteroid* asteroid) {
         Fragment* f = &asteroid->fragments[i];
         if (!f->active) continue;
         
-        // Update position
         f->x += f->vx;
         f->y += f->vy;
         f->z += f->vz;
         
-        // Apply mild gravity effect
         f->vy -= 0.01f;
         
-        // Update rotation
         f->rotX += f->rotVelX;
         f->rotY += f->rotVelY;
         f->rotZ += f->rotVelZ;
         
-        // Update lifetime
         f->lifetime--;
         if (f->lifetime <= 0) {
             f->active = 0;
@@ -143,11 +132,9 @@ void drawExplosionEffect(float x, float y, float z, float radius, float alpha) {
     float innerRadius = radius * 0.7f;
     float outerRadius = radius;
     
-    // Inner bright orange-yellow sphere
     glColor4f(1.0f, 0.8f, 0.2f, alpha);
     glutSolidSphere(innerRadius, 20, 20);
     
-    // Outer red-orange glow
     glColor4f(1.0f, 0.4f, 0.0f, alpha * 0.5f);
     glutSolidSphere(outerRadius, 20, 20);
     
@@ -157,9 +144,8 @@ void drawExplosionEffect(float x, float y, float z, float radius, float alpha) {
 }
 
 void initSolarSystem(void) {
-    bodyCount = 0;  // Reset counter
+    bodyCount = 0;
     
-    // Initialize Sun (kept exactly as before)
     CelestialBody* sun = &solarBodies[bodyCount++];
     sun->originalRadius = REAL_SUN_RADIUS;
     sun->radius = getScaledRadius(REAL_SUN_RADIUS);
@@ -167,20 +153,18 @@ void initSolarSystem(void) {
     sun->rotationSpeed = 0.1f;
     sun->currentRotation = 0;
     sun->type = CELESTIAL_SUN;
-    sun->color[0] = 1.0f;    // R
-    sun->color[1] = 0.85f;   // G
-    sun->color[2] = 0.4f;    // B
-    sun->color[3] = 1.0f;    // A
+    sun->color[0] = 1.0f;
+    sun->color[1] = 0.85f;
+    sun->color[2] = 0.4f;
+    sun->color[3] = 1.0f;
     sun->name = "Sol";
 
-    // Load planet textures
     mercuryTexture = LoadBMP("src/assets/textures/mercury.bmp");
     venusTexture = LoadBMP("src/assets/textures/venus.bmp");
     earthTexture = LoadBMP("src/assets/textures/earth.bmp");
     marsTexture = LoadBMP("src/assets/textures/mars.bmp");
     asteroidTexture = LoadBMP("src/assets/textures/rock.bmp");
 
-    // Initialize Mercury
     CelestialBody* mercury = &solarBodies[bodyCount++];
     mercury->originalRadius = REAL_EARTH_RADIUS * 0.383f;
     mercury->radius = 20.0f;
@@ -193,7 +177,6 @@ void initSolarSystem(void) {
     mercury->color[0] = mercury->color[1] = mercury->color[2] = mercury->color[3] = 1.0f;
     mercury->name = "Mercury";
 
-    // Initialize Venus
     CelestialBody* venus = &solarBodies[bodyCount++];
     venus->originalRadius = REAL_EARTH_RADIUS * 0.949f;
     venus->radius = 25.0f;
@@ -206,7 +189,6 @@ void initSolarSystem(void) {
     venus->color[0] = venus->color[1] = venus->color[2] = venus->color[3] = 1.0f;
     venus->name = "Venus";
 
-    // Initialize Earth
     CelestialBody* earth = &solarBodies[bodyCount++];
     earth->originalRadius = REAL_EARTH_RADIUS;
     earth->radius = 30.0f;
@@ -219,7 +201,6 @@ void initSolarSystem(void) {
     earth->color[0] = earth->color[1] = earth->color[2] = earth->color[3] = 1.0f;
     earth->name = "Earth";
 
-    // Initialize Mars
     CelestialBody* mars = &solarBodies[bodyCount++];
     mars->originalRadius = REAL_EARTH_RADIUS * 0.532f;
     mars->radius = 22.0f;
@@ -232,7 +213,6 @@ void initSolarSystem(void) {
     mars->color[0] = mars->color[1] = mars->color[2] = mars->color[3] = 1.0f;
     mars->name = "Mars";
 
-    // Initialize Asteroid Belt
     CelestialBody* asteroidBelt = &solarBodies[bodyCount++];
     asteroidBelt->originalRadius = REAL_EARTH_ORBIT * 1.2f;
     asteroidBelt->radius = getScaledDistance(REAL_EARTH_ORBIT * 1.2f);
@@ -247,9 +227,9 @@ void initSolarSystem(void) {
 
     CelestialBody* comet = &solarBodies[bodyCount++];
     comet->originalRadius = REAL_EARTH_RADIUS * 0.2f;
-    comet->radius = 25.0f;  // Bigger size
+    comet->radius = 25.0f;
     comet->orbitRadius = 3000.0f;
-    comet->orbitSpeed = 0.05f;  // Faster speed
+    comet->orbitSpeed = 0.05f;
     comet->orbitAngle = 0;
     comet->rotationSpeed = 0.5f;
     comet->currentRotation = 0;
@@ -262,7 +242,7 @@ void initSolarSystem(void) {
     CelestialBody* spaceStation = &solarBodies[bodyCount++];
     spaceStation->originalRadius = REAL_EARTH_RADIUS * 0.002f;
     spaceStation->radius = 5.0f;
-    spaceStation->rotationSpeed = 0.5f;  // Controls how fast it orbits around Earth
+    spaceStation->rotationSpeed = 0.5f;
     spaceStation->currentRotation = 0;
     spaceStation->type = CELESTIAL_SPACE_STATION;
     spaceStation->color[0] = spaceStation->color[1] = spaceStation->color[2] = 0.8f;
@@ -273,23 +253,18 @@ void initSolarSystem(void) {
 void drawSpaceStation(CelestialBody* station) {
     glPushMatrix();
     
-    // Get Earth's current position (Earth is index 3 in solarBodies array)
     CelestialBody* earth = &solarBodies[3];
     
-    // Calculate position slightly offset from Earth's position
-    // This keeps the station in a small orbit around Earth
     float offsetAngle = station->currentRotation * M_PI / 180.0f;
-    float orbitOffset = 60.0f;  // Distance from Earth's center
+    float orbitOffset = 60.0f;
     
-    // Calculate station position relative to Earth
     station->x = earth->x + orbitOffset * cos(offsetAngle);
     station->z = earth->z + orbitOffset * sin(offsetAngle);
-    station->y = earth->y + orbitOffset * 0.2f * sin(offsetAngle * 2.0f);  // Small vertical oscillation
+    station->y = earth->y + orbitOffset * 0.2f * sin(offsetAngle * 2.0f);
     
     glTranslatef(station->x, station->y, station->z);
     glRotatef(station->currentRotation, 0, 1, 0);
     
-    // Set material properties for metallic look
     GLfloat mat_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
     GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat mat_specular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
@@ -300,63 +275,47 @@ void drawSpaceStation(CelestialBody* station) {
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
     
-    float baseSize = station->radius * 0.15f; // Base unit for scaling
+    float baseSize = station->radius * 0.15f;
 
-    // Main truss structure (integrated truss structure - ITS)
     glColor3f(0.7f, 0.7f, 0.7f);
-    // Central truss beam
     Cube(0, 0, 0, baseSize * 10, baseSize, baseSize, 0, 0, 0, 1);
     
-    // Cross beams along the truss
     for (int i = -5; i <= 5; i++) {
         Cube(i * baseSize * 2, 0, 0, 
              baseSize * 0.5f, baseSize, baseSize * 3, 
              0, 0, 0, 1);
     }
     
-    // Pressurized modules (cylindrical segments)
     glColor3f(0.85f, 0.85f, 0.85f);
     
-    // Destiny (US Lab)
     Cylinder(-baseSize * 2, 0, 0, baseSize * 2, baseSize * 6);
-    
-    // Unity (Node 1)
     Cylinder(-baseSize * 8, 0, 0, baseSize * 2, baseSize * 4);
-    
-    // Zvezda (Service Module)
     Cylinder(baseSize * 4, 0, 0, baseSize * 2, baseSize * 6);
     
-    // Solar array wings
-    glColor3f(0.2f, 0.3f, 0.8f); // Blue-tinted solar panels
+    glColor3f(0.2f, 0.3f, 0.8f);
     float panelWidth = baseSize * 8;
     float panelHeight = baseSize * 0.1f;
     float panelLength = baseSize * 20;
     
-    // Port side arrays
     for (int i = -1; i <= 1; i += 2) {
         glPushMatrix();
         glTranslatef(i * baseSize * 4, 0, baseSize * 12);
-        // Support structure
         glColor3f(0.7f, 0.7f, 0.7f);
         Cube(0, 0, -baseSize * 11, 
              baseSize * 0.5f, baseSize * 0.5f, baseSize, 
              0, 0, 0, 1);
-        // Panel
         glColor3f(0.2f, 0.3f, 0.8f);
         Cube(0, 0, 0, 
              panelWidth, panelHeight, panelLength,
              0, 0, 0, 1);
         glPopMatrix();
         
-        // Starboard side arrays
         glPushMatrix();
         glTranslatef(i * baseSize * 4, 0, -baseSize * 12);
-        // Support structure
         glColor3f(0.7f, 0.7f, 0.7f);
         Cube(0, 0, baseSize * 11, 
              baseSize * 0.5f, baseSize * 0.5f, baseSize,
              0, 0, 0, 1);
-        // Panel
         glColor3f(0.2f, 0.3f, 0.8f);
         Cube(0, 0, 0,
              panelWidth, panelHeight, panelLength,
@@ -364,7 +323,6 @@ void drawSpaceStation(CelestialBody* station) {
         glPopMatrix();
     }
     
-    // Radiators (heat rejection system)
     glColor3f(0.9f, 0.9f, 0.9f);
     for (int i = -1; i <= 1; i += 2) {
         Cube(i * baseSize * 4, baseSize * 3, 0,
@@ -372,22 +330,17 @@ void drawSpaceStation(CelestialBody* station) {
              0, 0, 0, 1);
     }
     
-    // Soyuz/Progress vehicles (docked spacecraft)
     glColor3f(0.75f, 0.75f, 0.75f);
-    // Forward docking port
     Cone(baseSize * 8, 0, 0, baseSize * 1.5f, baseSize * 3);
     Cylinder(baseSize * 9.5f, 0, 0, baseSize, baseSize * 2);
     
-    // Aft docking port
     Cone(-baseSize * 12, 0, 0, baseSize * 1.5f, baseSize * 3);
     Cylinder(-baseSize * 13.5f, 0, 0, baseSize, baseSize * 2);
     
-    // Cupola (observation module)
     glColor3f(0.6f, 0.6f, 0.6f);
     glPushMatrix();
     glTranslatef(0, -baseSize * 2, 0);
     Cylinder(0, 0, 0, baseSize * 1.5f, baseSize * 1.5f);
-    // Windows
     glColor3f(0.3f, 0.3f, 0.4f);
     for (int i = 0; i < 8; i++) {
         glPushMatrix();
@@ -399,13 +352,10 @@ void drawSpaceStation(CelestialBody* station) {
     }
     glPopMatrix();
     
-    // Add Canadarm2 (Mobile Servicing System)
     glColor3f(0.9f, 0.9f, 0.9f);
     glPushMatrix();
     glTranslatef(baseSize * 2, baseSize * 2, 0);
-    // Base joint
     Sphere(0, 0, 0, baseSize * 0.5f);
-    // Arm segments
     float angle1 = sin(station->currentRotation * 0.01f) * 30;
     float angle2 = cos(station->currentRotation * 0.01f) * 45;
     
@@ -413,13 +363,10 @@ void drawSpaceStation(CelestialBody* station) {
     Cylinder(0, 0, 0, baseSize * 0.3f, baseSize * 4);
     glTranslatef(0, baseSize * 4, 0);
     
-    // Middle joint
     Sphere(0, 0, 0, baseSize * 0.5f);
     glRotatef(angle2, 0, 0, 1);
     
-    // End segment
     Cylinder(0, 0, 0, baseSize * 0.3f, baseSize * 4);
-    // End effector
     glTranslatef(0, baseSize * 4, 0);
     Sphere(0, 0, 0, baseSize * 0.4f);
     glPopMatrix();
@@ -433,7 +380,6 @@ void cleanupAsteroids(void) {
             if (asteroids[i].vertices != NULL) {
                 free(asteroids[i].vertices);
             }
-            // Cleanup any active fragments
             if (asteroids[i].fragmentsActive) {
                 for (int j = 0; j < MAX_FRAGMENTS; j++) {
                     if (asteroids[i].fragments[j].vertices != NULL) {
@@ -461,7 +407,6 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
 
     int idx = 0;
     
-    // Top vertex
     vertices[idx].x = 0;
     vertices[idx].y = baseRadius;
     vertices[idx].z = 0;
@@ -469,7 +414,6 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
     vertices[idx].v = 0.0f;
     idx++;
     
-    // Generate vertices in rings
     for (int i = 1; i < verticalSegments; i++) {
         float phi = M_PI * i / verticalSegments;
         float y = baseRadius * cos(phi);
@@ -495,7 +439,6 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
         }
     }
     
-    // Bottom vertex
     vertices[idx].x = 0;
     vertices[idx].y = -baseRadius;
     vertices[idx].z = 0;
@@ -506,12 +449,9 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
     return vertices;
 }
 
-// Rest of the functions (drawAsteroid, drawAsteroidBelt, etc.) remain the same as before
-
 void drawAsteroidBelt(CelestialBody* belt) {
     static float* fixedY = NULL;
     
-    // Initialize asteroids if not already done
     if (!asteroidBeltInitialized) {
         srand(1234);
         asteroids = (Asteroid*)malloc(sizeof(Asteroid) * NUM_ASTEROIDS);
@@ -529,7 +469,7 @@ void drawAsteroidBelt(CelestialBody* belt) {
             asteroids[i].health = MAX_HEALTH;
             asteroids[i].fragmentsActive = 0;
             fixedY[i] = ((float)rand() / RAND_MAX - 0.5) * BELT_HEIGHT;
-            asteroids[i].textureId = asteroidTexture;  // Set the asteroid texture
+            asteroids[i].textureId = asteroidTexture;
         }
         asteroidBeltInitialized = 1;
     }
@@ -575,9 +515,8 @@ void drawAsteroidBelt(CelestialBody* belt) {
 void drawAsteroid(Asteroid* asteroid) {
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-    // Set material properties
     GLfloat mat_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-    GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };  // White for texture
+    GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat mat_specular[] = { 0.2f, 0.2f, 0.2f, 1.0f };
     GLfloat mat_shininess[] = { 32.0f };
 
@@ -587,20 +526,16 @@ void drawAsteroid(Asteroid* asteroid) {
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
     glEnable(GL_TEXTURE_2D);
-    
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    
     glBindTexture(GL_TEXTURE_2D, asteroid->textureId);
 
     int horizontalSegments = (MIN_ASTEROID_VERTICES / 2);
     int verticalSegments = 6;
     
-    // Draw top cap
     glBegin(GL_TRIANGLE_FAN);
     glNormal3f(0, 1, 0);
     glTexCoord2f(0.5f, 0.0f);
@@ -618,7 +553,6 @@ void drawAsteroid(Asteroid* asteroid) {
     }
     glEnd();
     
-    // Draw body segments
     for (int i = 0; i < verticalSegments - 2; i++) {
         glBegin(GL_TRIANGLE_STRIP);
         for (int j = 0; j <= horizontalSegments; j++) {
@@ -635,7 +569,6 @@ void drawAsteroid(Asteroid* asteroid) {
         glEnd();
     }
     
-    // Draw bottom cap
     glBegin(GL_TRIANGLE_FAN);
     int lastIdx = asteroid->numVertices - 1;
     glNormal3f(0, -1, 0);
@@ -661,7 +594,6 @@ void drawAsteroid(Asteroid* asteroid) {
 void drawComet(CelestialBody* comet) {
     glPushMatrix();
     
-    // Calculate position based on orbit
     float orbitAngleRad = comet->orbitAngle * M_PI / 180.0f;
     comet->x = cos(orbitAngleRad) * comet->orbitRadius;
     comet->z = sin(orbitAngleRad) * comet->orbitRadius;
@@ -669,16 +601,13 @@ void drawComet(CelestialBody* comet) {
     
     glTranslatef(comet->x, comet->y, comet->z);
     
-    // First draw the bright glowing core
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     
-    // Intense bright core
     glColor4f(1.0f, 0.95f, 0.8f, 1.0f);
     glutSolidSphere(comet->radius * 0.3f, 20, 20);
     
-    // Outer glow layers
     float glowSizes[] = {0.4f, 0.5f, 0.7f};
     float glowAlphas[] = {0.7f, 0.5f, 0.3f};
     for(int i = 0; i < 3; i++) {
@@ -686,34 +615,30 @@ void drawComet(CelestialBody* comet) {
         glutSolidSphere(comet->radius * glowSizes[i], 20, 20);
     }
     
-    // Draw tail
-    float tailLength = comet->radius * 30.0f;  // Much longer tail
+    float tailLength = comet->radius * 30.0f;
     float spreadBase = comet->radius * 0.5f;
-    int numParticles = 500;  // More particles
+    int numParticles = 500;
     
-    glPointSize(2.0f);  // Larger points for better visibility
+    glPointSize(2.0f);
     glBegin(GL_POINTS);
     
     for(int i = 0; i < numParticles; i++) {
         float t = (float)i / numParticles;
-        float spread = spreadBase + (t * comet->radius * 2.0f);  // Wider spread further from nucleus
+        float spread = spreadBase + (t * comet->radius * 2.0f);
         
-        // Calculate base position along tail
         float x = -tailLength * t;
         
-        // Add random spread
         float rand1 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
         float rand2 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
         float y = rand1 * spread;
         float z = rand2 * spread;
         
-        // Vary colors from bright white-blue near nucleus to fainter blue in tail
         float brightness = 1.0f - (t * 0.8f);
-        float alpha = 1.0f - (t * t);  // Quadratic falloff for smoother fade
+        float alpha = 1.0f - (t * t);
         
-        if(rand() % 4 == 0) {  // 25% chance of bright ice particle
+        if(rand() % 4 == 0) {
             glColor4f(1.0f, 1.0f, 1.0f, alpha);
-            glPointSize(3.0f);  // Bigger points for ice
+            glPointSize(3.0f);
         } else {
             glColor4f(0.8f * brightness, 0.9f * brightness, 1.0f, alpha * 0.5f);
             glPointSize(2.0f);
@@ -723,7 +648,6 @@ void drawComet(CelestialBody* comet) {
     }
     glEnd();
     
-    // Add a bright central stream
     glBegin(GL_QUAD_STRIP);
     float streamWidth = comet->radius * 0.5f;
     float streamLength = tailLength * 0.7f;
@@ -732,7 +656,7 @@ void drawComet(CelestialBody* comet) {
     for(int i = 0; i <= segments; i++) {
         float t = (float)i / segments;
         float x = -streamLength * t;
-        float alpha = 1.0f - (t * t);  // Quadratic falloff
+        float alpha = 1.0f - (t * t);
         
         glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.5f);
         glVertex3f(x, streamWidth * (1.0f - t), 0.0f);
@@ -740,9 +664,8 @@ void drawComet(CelestialBody* comet) {
     }
     glEnd();
     
-    // Add some random streaks for additional detail
     glBegin(GL_LINES);
-    for(int i = 0; i < 50; i++) {  // Add 50 random streaks
+    for(int i = 0; i < 50; i++) {
         float t = (float)rand() / RAND_MAX;
         float x1 = -tailLength * t;
         float y1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
@@ -759,9 +682,10 @@ void drawComet(CelestialBody* comet) {
     
     glEnable(GL_LIGHTING);
     glDisable(GL_BLEND);
-    glPointSize(1.0f);  // Reset point size
+    glPointSize(1.0f);
     glPopMatrix();
 }
+
 void setupSolarLighting(void) {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -791,11 +715,9 @@ void drawBody(CelestialBody* body) {
         
         glDisable(GL_LIGHTING);
         
-        // Draw the sun's core
         glColor4f(body->color[0], body->color[1], body->color[2], body->color[3]);
         Sphere(0, 0, 0, body->radius);
         
-        // Draw sun's glow
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
         

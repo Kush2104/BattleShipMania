@@ -1,15 +1,16 @@
 #ifndef INIT_H
 #define INIT_H
 
+// Star representation for background starfield
 typedef struct {
-    float x, y, z;       // Position
-    float brightness;    // Brightness for twinkling
-    float twinkleSpeed;  // Unique speed for each star
+    float x, y, z;
+    float brightness;
+    float twinkleSpeed;
 } Star;
 
-#define NUM_STARS 5000  // More stars for better effect
-#define STAR_VIEW_DISTANCE 10000.0f  // Much further away
-#define STAR_SPACING 1000.0f  // Space between star field regeneration
+#define NUM_STARS 5000
+#define STAR_VIEW_DISTANCE 10000.0f
+#define STAR_SPACING 1000.0f
 
 extern Star stars[NUM_STARS];
 
