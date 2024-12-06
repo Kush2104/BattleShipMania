@@ -1,30 +1,40 @@
-// celestial.h
 #ifndef SOLAR_SYSTEM_H
 #define SOLAR_SYSTEM_H
 
-#include "battleship.h"
-#include <math.h>
 #include "utils.h"
+#include "battleship.h"
 
-// Real scales (in km) - we'll apply a scale factor to make it playable
+// Real astronomical scales in km
 #define REAL_SUN_RADIUS 696340.0f
 #define REAL_EARTH_RADIUS 6371.0f
-#define REAL_EARTH_ORBIT 149600000.0f  // Average distance from Sun
+#define REAL_EARTH_ORBIT 149600000.0f
+#define REAL_JUPITER_RADIUS 69911.0f
+#define REAL_SATURN_RADIUS 58232.0f
+#define REAL_URANUS_RADIUS 25362.0f
+#define REAL_NEPTUNE_RADIUS 24622.0f
 
-#define SPACE_SCALE_FACTOR 0.00001f    // Back to original
-#define BODY_SCALE_FACTOR 0.0001f      // Back to original
+#define SATURN_RING_INNER 1.2f   // Multiplier of planet radius
+#define SATURN_RING_OUTER 2.5f   // Saturn's rings are extensive
+#define URANUS_RING_INNER 1.4f
+#define URANUS_RING_OUTER 2.0f
+#define NEPTUNE_RING_INNER 1.1f  // Neptune has thin, faint rings
+#define NEPTUNE_RING_OUTER 1.5f
+#define RING_SEGMENTS 180
 
-// Celestial body types
+// Scale factors to make the game playable
+#define SPACE_SCALE_FACTOR 0.00002f    
+#define BODY_SCALE_FACTOR 0.0001f      
+
+// Types of celestial objects
 #define CELESTIAL_SUN 0
 #define CELESTIAL_PLANET 1
 #define CELESTIAL_ASTEROID 2
 #define CELESTIAL_COMET 3
-#define CELESTIAL_NEBULA 4
-#define CELESTIAL_BLACK_HOLE 5
-#define CELESTIAL_SPACE_STATION 6
+#define CELESTIAL_SPACE_STATION 4
 
+// Asteroid belt configuration
 #define ASTEROID_SCALE_FACTOR 5.0f
-#define MIN_ASTEROID_VERTICES 24  // More vertices for smoother shape
+#define MIN_ASTEROID_VERTICES 24
 #define MAX_ASTEROID_VERTICES 32
 #define NUM_ASTEROIDS 50
 #define MIN_ASTEROID_RADIUS 8.0
@@ -33,35 +43,38 @@
 #define NOISE_FACTOR 0.4f 
 #define ASTEROID_BELT_DISTANCE 2000.0f
 #define BELT_WIDTH 500.0f
-#define BELT_HEIGHT 50.0f  // Reduced height for less vertical spread
-#define ASTEROID_Y_SCALE 2.0f  // New constant for vertical scaling
+#define BELT_HEIGHT 50.0f
+#define ASTEROID_Y_SCALE 2.0f
 
-#define MIN_ORBIT_SPEED 0.0001f  // Much slower minimum orbit speed
-#define MAX_ORBIT_SPEED 0.0002f  // Much slower maximum orbit speed
+#define MIN_ORBIT_SPEED 0.0001f
+#define MAX_ORBIT_SPEED 0.0002f
 
 // Asteroid destruction system
 #define MAX_FRAGMENTS 8
 #define FRAGMENT_LIFETIME 200
-#define MAX_HEALTH 3  // Number of hits needed to destroy asteroid
+#define MAX_HEALTH 3
 #define EXPLOSION_RADIUS 15.0f
 
+// Basic 3D vertex with texture coordinates
 typedef struct {
     float x, y, z;
-    float u, v;    // Texture coordinates
+    float u, v;
 } Vertex3D;
 
+// Fragment system for asteroid destruction
 typedef struct {
     Vertex3D* vertices;
     int numVertices;
-    float x, y, z;        // Position
-    float vx, vy, vz;     // Velocity
-    float rotX, rotY, rotZ;  // Rotation angles
-    float rotVelX, rotVelY, rotVelZ;  // Rotation velocities
-    float scale;          // Size of fragment
-    float lifetime;       // How long fragment exists
-    int active;          // Whether fragment is active
+    float x, y, z;
+    float vx, vy, vz;
+    float rotX, rotY, rotZ;
+    float rotVelX, rotVelY, rotVelZ;
+    float scale;
+    float lifetime;
+    int active;
 } Fragment;
 
+// Main asteroid structure
 typedef struct {
     Vertex3D* vertices;
     int numVertices;
@@ -71,43 +84,46 @@ typedef struct {
     float orbitRadius;
     float orbitSpeed;
     GLuint textureId;
-    float x, y, z;        // Current position
-    int active;          // Whether asteroid is still active
-    int health;          // Current health points
-    Fragment fragments[MAX_FRAGMENTS];  // Rock fragments
-    int fragmentsActive;  // Whether fragments are active
+    float x, y, z;
+    int active;
+    int health;
+    Fragment fragments[MAX_FRAGMENTS];
+    int fragmentsActive;
 } Asteroid;
 
+// Structure for all celestial bodies (planets, sun, etc)
 typedef struct {
-    float x, y, z;           // Position
-    float radius;           // Actual radius after scaling
-    float originalRadius;   // Original radius before scaling
-    float rotationSpeed;    // Degrees per frame
-    float currentRotation;  // Current rotation angle
-    float orbitRadius;      // Distance from sun
-    float orbitSpeed;      // Speed of orbit
-    float orbitAngle;      // Current position in orbit
-    int type;              // Type of celestial body
-    float color[4];        // RGBA color
-    char* name;           // Body name
-    float specialEffectTimer;  // For animation effects
-    float specialEffectIntensity;  // For varying effect intensity
+    float x, y, z;
+    float radius;
+    float originalRadius;
+    float rotationSpeed;
+    float currentRotation;
+    float orbitRadius;
+    float orbitSpeed;
+    float orbitAngle;
+    int type;
+    float color[4];
+    char* name;
+    float specialEffectTimer;
 } CelestialBody;
 
-#define MAX_BODIES 20  // Increased from 10 to accommodate new objects
+#define MAX_BODIES 20
+
 extern CelestialBody solarBodies[MAX_BODIES];
 extern int bodyCount;
 extern Asteroid* asteroids;
 extern int asteroidBeltInitialized;
 
-// Function declarations
+// Core system functions
 void initSolarSystem(void);
 void updateSolarSystem(void);
 void drawSolarSystem(void);
 void drawBody(CelestialBody* body);
+void drawPlanetRings(float innerRadius, float outerRadius, float r, float g, float b, float alpha);
 float getScaledDistance(float realDistance);
 float getScaledRadius(float realRadius);
 
+// Asteroid related functions
 void drawAsteroid(Asteroid* asteroid);
 Vertex3D* generateAsteroidVertices(int* numVertices);
 void initFragments(Asteroid* asteroid);
@@ -115,11 +131,10 @@ void updateFragments(Asteroid* asteroid);
 void drawFragments(Asteroid* asteroid);
 void drawExplosionEffect(float x, float y, float z, float radius, float alpha);
 
+// Draw functions for different celestial objects
 void drawAsteroidBelt(CelestialBody* belt);
 void drawComet(CelestialBody* comet);
 void drawSpaceStation(CelestialBody* station);
-void drawNebula(CelestialBody* nebula);
-void drawBlackHole(CelestialBody* blackHole);
 
 void cleanupAsteroids(void);
 

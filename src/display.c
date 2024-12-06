@@ -1,9 +1,5 @@
-#include <math.h>
 #include "include/display.h"
-#include "include/init.h"
-#include "include/battleship.h"
-#include "include/input.h"
-#include "include/celestial.h"
+
 
 void drawAxes() {
     glBegin(GL_LINES);

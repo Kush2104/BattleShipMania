@@ -2,6 +2,8 @@
 #define BATTLESHIP_H
 
 #include "celestial.h"
+#include "utils.h"
+#include "init.h"
 
 #define MAX_BULLETS 50           // Increased from 20
 #define BULLET_LIFETIME 500     // New constant for bullet lifetime

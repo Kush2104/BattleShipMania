@@ -1,8 +1,17 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <time.h>
+#include <math.h>
+#include <ctype.h>
+#include <limits.h>
+#include <float.h>
+#include <errno.h>
+
 #ifdef USEGLEW
 #include <GL/glew.h>
 #endif
@@ -11,6 +20,10 @@
 #include <GLUT/glut.h>
 #else
 #include <GL/freeglut.h>
+#endif
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
 #endif
 
 // Texture loading function

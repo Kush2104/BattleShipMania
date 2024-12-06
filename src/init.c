@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <math.h>
 #include "include/init.h"
 
 Star stars[NUM_STARS];

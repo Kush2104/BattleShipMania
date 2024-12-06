@@ -1,7 +1,5 @@
-#include <math.h>
 #include "include/battleship.h"
-#include "include/utils.h"
-#include "include/init.h"
+
 
 // Global variables
 Bullet bullets[MAX_BULLETS] = {0};

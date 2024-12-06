@@ -1,6 +1,9 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include "utils.h"
+#include "battleship.h"
+
 // Key states for continuous movement
 typedef struct {
     int upPressed;      // Up arrow key state

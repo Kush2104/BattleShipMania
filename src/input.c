@@ -1,7 +1,4 @@
 #include "include/input.h"
-#include "include/battleship.h"
-#include <GL/freeglut.h>
-#include <math.h>
 
 KeyStates keyStates = {0, 0, 0, 0};
 
