@@ -616,10 +616,12 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
 void initFragments(Asteroid* asteroid) {
     asteroid->fragmentsActive = 1;
     
+    float baseSize = (MAX_ASTEROID_RADIUS + MIN_ASTEROID_RADIUS) / 2.0f;
+    
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
         
-        int fragVertices = asteroid->numVertices / 2;
+        int fragVertices = asteroid->numVertices / 3;
         f->vertices = generateAsteroidVertices(&fragVertices);
         f->numVertices = fragVertices;
         
@@ -627,9 +629,10 @@ void initFragments(Asteroid* asteroid) {
         f->y = asteroid->y;
         f->z = asteroid->z;
         
+        // Increased explosion velocity
         float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
         float elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
-        float speed = 1.0f + ((float)rand() / RAND_MAX) * 2.0f;
+        float speed = 5.0f + ((float)rand() / RAND_MAX) * 7.0f;  // Much faster speed range
         
         f->vx = speed * cos(angle) * cos(elevation);
         f->vy = speed * sin(elevation);
@@ -639,11 +642,13 @@ void initFragments(Asteroid* asteroid) {
         f->rotY = ((float)rand() / RAND_MAX) * 360.0f;
         f->rotZ = ((float)rand() / RAND_MAX) * 360.0f;
         
-        f->rotVelX = ((float)rand() / RAND_MAX - 0.5f) * 10.0f;
-        f->rotVelY = ((float)rand() / RAND_MAX - 0.5f) * 10.0f;
-        f->rotVelZ = ((float)rand() / RAND_MAX - 0.5f) * 10.0f;
+        // Increased rotation speeds
+        f->rotVelX = ((float)rand() / RAND_MAX - 0.5f) * 30.0f;
+        f->rotVelY = ((float)rand() / RAND_MAX - 0.5f) * 30.0f;
+        f->rotVelZ = ((float)rand() / RAND_MAX - 0.5f) * 30.0f;
         
-        f->scale = 0.2f + ((float)rand() / RAND_MAX) * 0.2f;
+        // Reduced scale back to a reasonable size
+        f->scale = 0.3f + ((float)rand() / RAND_MAX) * 0.2f;
         
         f->lifetime = FRAGMENT_LIFETIME;
         f->active = 1;
@@ -691,6 +696,16 @@ void drawFragments(Asteroid* asteroid) {
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, asteroid->textureId);
     
+    GLfloat mat_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+    GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat mat_specular[] = { 0.4f, 0.4f, 0.4f, 1.0f };
+    GLfloat mat_shininess[] = { 32.0f };
+    
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+    
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
         if (!f->active) continue;
@@ -700,18 +715,37 @@ void drawFragments(Asteroid* asteroid) {
         glRotatef(f->rotX, 1, 0, 0);
         glRotatef(f->rotY, 0, 1, 0);
         glRotatef(f->rotZ, 0, 0, 1);
-        glScalef(f->scale, f->scale, f->scale);
         
-        glBegin(GL_TRIANGLES);
-        for (int j = 0; j < f->numVertices; j += 3) {
-            for (int k = 0; k < 3; k++) {
-                Vertex3D* v = &f->vertices[j + k];
-                glTexCoord2f(v->u, v->v);
-                glNormal3f(v->x, v->y, v->z);
-                glVertex3f(v->x, v->y, v->z);
+        // Reduced visual scale
+        float visualScale = f->scale * 2.0f;  // Now only 2x instead of 5x
+        glScalef(visualScale, visualScale, visualScale);
+        
+        const int stacks = 12;
+        const int slices = 12;
+        const float r = 1.0f;
+        
+        for (int stack = 0; stack < stacks; stack++) {
+            float phi1 = M_PI * (-0.5 + (float)stack / stacks);
+            float phi2 = M_PI * (-0.5 + (float)(stack + 1) / stacks);
+            
+            glBegin(GL_QUAD_STRIP);
+            for (int slice = 0; slice <= slices; slice++) {
+                float theta = 2.0f * M_PI * (float)slice / slices;
+                
+                for (int k = 0; k <= 1; k++) {
+                    float phi = k ? phi2 : phi1;
+                    float y = sin(phi);
+                    float c = cos(phi);
+                    float x = c * cos(theta);
+                    float z = c * sin(theta);
+                    
+                    glTexCoord2f((float)slice / slices, (float)(stack + k) / stacks);
+                    glNormal3f(x, y, z);
+                    glVertex3f(r * x, r * y, r * z);
+                }
             }
+            glEnd();
         }
-        glEnd();
         
         glPopMatrix();
     }
