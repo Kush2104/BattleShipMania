@@ -1,7 +1,5 @@
-#include <math.h>
 #include "include/battleship.h"
-#include "include/utils.h"
-#include "include/init.h"
+
 
 // Global variables
 Bullet bullets[MAX_BULLETS] = {0};
@@ -30,6 +28,9 @@ void initializeShipHealth(void) {
     shipHealth.explosionStage = 0;
     shipHealth.shockwaveSize = 0;
     shipHealth.explosionFlashTime = 0;
+    shipState.yaw = 45;
+    shipState.pitch = 0;
+    shipState.roll = 0;
 }
 
 void damageShip(int damage) {

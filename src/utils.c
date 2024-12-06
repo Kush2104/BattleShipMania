@@ -3,12 +3,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"  // Ignore unused variable warnings
 #pragma GCC diagnostic ignored "-Wunused-parameter" // Ignore unused parameter warnings
 
-#define STBI_ONLY_PNG
-#define STB_IMAGE_STATIC
-#define STB_IMAGE_IMPLEMENTATION
-#include "include/stb_image.h"
 #include "include/utils.h"
-#include <math.h>
 
 #define Cos(x) (cos((x)*M_PI/180))
 #define Sin(x) (sin((x)*M_PI/180))

@@ -2,6 +2,8 @@
 #define BATTLESHIP_H
 
 #include "celestial.h"
+#include "utils.h"
+#include "init.h"
 
 #define MAX_BULLETS 50           // Increased from 20
 #define BULLET_LIFETIME 500     // New constant for bullet lifetime
@@ -15,8 +17,8 @@
 #define PITCH_RETURN_SPEED 2.0  // Speed at which pitch returns to neutral
 #define ROLL_RETURN_SPEED 2.0  // Speed at which roll returns to neutral
 
-#define SHIP_START_X 2000.0f  // Starting X position
-#define SHIP_START_Z 2000.0f 
+#define SHIP_START_X 1000.0f  // Closer to Earth's orbit
+#define SHIP_START_Z 1000.0f 
 
 #define INITIAL_HEALTH 5
 #define SUN_DAMAGE 10        // Instant death
