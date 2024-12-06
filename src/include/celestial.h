@@ -46,6 +46,11 @@
 #define BELT_HEIGHT 50.0f
 #define ASTEROID_Y_SCALE 2.0f
 
+#define STATION_ROTATION_SPEED 0.1f
+#define STATION_RING_SPEED 0.5f
+#define STATION_ORBIT_DISTANCE 50.0f  // Closer to Earth
+#define STATION_BASE_SIZE 1.1f
+
 #define MIN_ORBIT_SPEED 0.0001f
 #define MAX_ORBIT_SPEED 0.0002f
 

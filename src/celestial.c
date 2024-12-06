@@ -167,6 +167,16 @@ void initSolarSystem(void) {
     comet->color[3] = 1.0f;
     comet->name = "Halley's Comet";
     comet->specialEffectTimer = 0;
+
+    CelestialBody* spaceStation = &solarBodies[bodyCount++];
+    spaceStation->originalRadius = REAL_EARTH_RADIUS * 0.002f;
+    spaceStation->radius = 5.0f;
+    spaceStation->rotationSpeed = 0.5f;
+    spaceStation->currentRotation = 0;
+    spaceStation->type = CELESTIAL_SPACE_STATION;
+    spaceStation->color[0] = spaceStation->color[1] = spaceStation->color[2] = 0.8f;
+    spaceStation->color[3] = 1.0f;
+    spaceStation->name = "ISS"; 
 }
 
 void setupSolarLighting(void) {
@@ -849,18 +859,18 @@ void drawComet(CelestialBody* comet) {
 void drawSpaceStation(CelestialBody* station) {
     glPushMatrix();
     
+    // Calculate position relative to Earth
     CelestialBody* earth = &solarBodies[3];
-    
     float offsetAngle = station->currentRotation * M_PI / 180.0f;
-    float orbitOffset = 60.0f;
     
-    station->x = earth->x + orbitOffset * cos(offsetAngle);
-    station->z = earth->z + orbitOffset * sin(offsetAngle);
-    station->y = earth->y + orbitOffset * 0.2f * sin(offsetAngle * 2.0f);
+    station->x = earth->x + STATION_ORBIT_DISTANCE * cos(offsetAngle);
+    station->z = earth->z + STATION_ORBIT_DISTANCE * sin(offsetAngle);
+    station->y = earth->y + STATION_ORBIT_DISTANCE * 0.1f * sin(offsetAngle * 2.0f);
     
     glTranslatef(station->x, station->y, station->z);
     glRotatef(station->currentRotation, 0, 1, 0);
     
+    // Set material properties
     GLfloat mat_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
     GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat mat_specular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
@@ -871,100 +881,79 @@ void drawSpaceStation(CelestialBody* station) {
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
     
-    float baseSize = station->radius * 0.15f;
-
+    float baseSize = STATION_BASE_SIZE;
+    
+    // Central hub
     glColor3f(0.7f, 0.7f, 0.7f);
-    Cube(0, 0, 0, baseSize * 10, baseSize, baseSize, 0, 0, 0, 1);
+    Cylinder(0, 0, 0, baseSize * 1.2f, baseSize * 3.0f);
     
-    for (int i = -5; i <= 5; i++) {
-        Cube(i * baseSize * 2, 0, 0, 
-             baseSize * 0.5f, baseSize, baseSize * 3, 
-             0, 0, 0, 1);
-    }
-    
-    glColor3f(0.85f, 0.85f, 0.85f);
-    
-    Cylinder(-baseSize * 2, 0, 0, baseSize * 2, baseSize * 6);
-    Cylinder(-baseSize * 8, 0, 0, baseSize * 2, baseSize * 4);
-    Cylinder(baseSize * 4, 0, 0, baseSize * 2, baseSize * 6);
-    
-    glColor3f(0.2f, 0.3f, 0.8f);
-    float panelWidth = baseSize * 8;
-    float panelHeight = baseSize * 0.1f;
-    float panelLength = baseSize * 20;
-    
-    for (int i = -1; i <= 1; i += 2) {
-        glPushMatrix();
-        glTranslatef(i * baseSize * 4, 0, baseSize * 12);
-        glColor3f(0.7f, 0.7f, 0.7f);
-        Cube(0, 0, -baseSize * 11, 
-             baseSize * 0.5f, baseSize * 0.5f, baseSize, 
-             0, 0, 0, 1);
-        glColor3f(0.2f, 0.3f, 0.8f);
-        Cube(0, 0, 0, 
-             panelWidth, panelHeight, panelLength,
-             0, 0, 0, 1);
-        glPopMatrix();
-        
-        glPushMatrix();
-        glTranslatef(i * baseSize * 4, 0, -baseSize * 12);
-        glColor3f(0.7f, 0.7f, 0.7f);
-        Cube(0, 0, baseSize * 11, 
-             baseSize * 0.5f, baseSize * 0.5f, baseSize,
-             0, 0, 0, 1);
-        glColor3f(0.2f, 0.3f, 0.8f);
-        Cube(0, 0, 0,
-             panelWidth, panelHeight, panelLength,
-             0, 0, 0, 1);
-        glPopMatrix();
-    }
-    
-    glColor3f(0.9f, 0.9f, 0.9f);
-    for (int i = -1; i <= 1; i += 2) {
-        Cube(i * baseSize * 4, baseSize * 3, 0,
-             baseSize * 0.2f, baseSize * 4, baseSize * 8,
-             0, 0, 0, 1);
-    }
-    
-    glColor3f(0.75f, 0.75f, 0.75f);
-    Cone(baseSize * 8, 0, 0, baseSize * 1.5f, baseSize * 3);
-    Cylinder(baseSize * 9.5f, 0, 0, baseSize, baseSize * 2);
-    
-    Cone(-baseSize * 12, 0, 0, baseSize * 1.5f, baseSize * 3);
-    Cylinder(-baseSize * 13.5f, 0, 0, baseSize, baseSize * 2);
-    
-    glColor3f(0.6f, 0.6f, 0.6f);
+    // Rotating main ring
     glPushMatrix();
-    glTranslatef(0, -baseSize * 2, 0);
-    Cylinder(0, 0, 0, baseSize * 1.5f, baseSize * 1.5f);
-    glColor3f(0.3f, 0.3f, 0.4f);
-    for (int i = 0; i < 8; i++) {
+    glRotatef(station->currentRotation * STATION_RING_SPEED, 0, 1, 0);
+    
+    // Main habitat ring
+    glColor3f(0.65f, 0.65f, 0.65f);
+    for(int i = 0; i < 8; i++) {
+        float angle = i * 45.0f;
         glPushMatrix();
-        glRotatef(i * 45, 0, 1, 0);
-        Cube(baseSize * 1.5f, 0, 0,
-             baseSize * 0.4f, baseSize * 0.4f, baseSize * 0.1f,
-             0, 0, 0, 1);
+        glRotatef(angle, 0, 1, 0);
+        Cube(baseSize * 4, 0, 0, 
+             baseSize * 1.5f, baseSize * 0.8f, baseSize * 0.8f,
+             angle, 0, 1, 0);
+        glPopMatrix();
+    }
+    
+    // Ring connectors
+    glColor3f(0.6f, 0.6f, 0.6f);
+    for(int i = 0; i < 4; i++) {
+        glPushMatrix();
+        glRotatef(i * 90, 0, 1, 0);
+        Cylinder(baseSize * 4, 0, 0, baseSize * 0.3f, baseSize * 0.3f);
         glPopMatrix();
     }
     glPopMatrix();
     
-    glColor3f(0.9f, 0.9f, 0.9f);
+    // Solar panel arrays
     glPushMatrix();
-    glTranslatef(baseSize * 2, baseSize * 2, 0);
-    Sphere(0, 0, 0, baseSize * 0.5f);
-    float angle1 = sin(station->currentRotation * 0.01f) * 30;
-    float angle2 = cos(station->currentRotation * 0.01f) * 45;
+    glRotatef(-station->currentRotation * STATION_RING_SPEED * 0.5f, 0, 1, 0);
     
-    glRotatef(angle1, 0, 0, 1);
-    Cylinder(0, 0, 0, baseSize * 0.3f, baseSize * 4);
-    glTranslatef(0, baseSize * 4, 0);
+    for(int i = -1; i <= 1; i += 2) {
+        // Panel mount
+        glColor3f(0.7f, 0.7f, 0.7f);
+        Cube(0, 0, i * baseSize * 3,
+             baseSize * 0.3f, baseSize * 0.3f, baseSize * 2.0f,
+             0, 0, 0, 1);
+        
+        // Solar panels
+        glColor3f(0.2f, 0.3f, 0.8f);
+        Cube(baseSize * 2, 0, i * baseSize * 3,
+             baseSize * 4.0f, baseSize * 0.1f, baseSize * 1.5f,
+             0, 0, 0, 1);
+        
+        Cube(-baseSize * 2, 0, i * baseSize * 3,
+             baseSize * 4.0f, baseSize * 0.1f, baseSize * 1.5f,
+             0, 0, 0, 1);
+    }
+    glPopMatrix();
     
-    Sphere(0, 0, 0, baseSize * 0.5f);
-    glRotatef(angle2, 0, 0, 1);
+    // Docking section
+    glColor3f(0.75f, 0.75f, 0.75f);
+    Cylinder(0, baseSize * 2, 0, baseSize * 0.8f, baseSize * 1.0f);
     
-    Cylinder(0, 0, 0, baseSize * 0.3f, baseSize * 4);
-    glTranslatef(0, baseSize * 4, 0);
-    Sphere(0, 0, 0, baseSize * 0.4f);
+    // Communication array
+    glPushMatrix();
+    glTranslatef(0, baseSize * 3, 0);
+    glRotatef(station->currentRotation * 2, 0, 1, 0);
+    glColor3f(0.8f, 0.8f, 0.8f);
+    
+    for(int i = 0; i < 4; i++) {
+        glPushMatrix();
+        glRotatef(i * 90, 0, 1, 0);
+        Cube(baseSize * 0.8f, 0, 0,
+             baseSize * 0.8f, baseSize * 0.1f, baseSize * 0.1f,
+             45, 0, 0, 1);
+        glPopMatrix();
+    }
     glPopMatrix();
     
     glPopMatrix();
