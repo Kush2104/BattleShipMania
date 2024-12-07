@@ -4,6 +4,7 @@
 #include "celestial.h"
 #include "utils.h"
 #include "init.h"
+#include "input.h"
 
 #define MAX_BULLETS 50           // Increased from 20
 #define BULLET_LIFETIME 500     // New constant for bullet lifetime
@@ -35,6 +36,13 @@
 #define EXPLOSION_SPREAD 20.0f          // Much wider spread
 #define SHOCKWAVE_COUNT 3              // Multiple shockwave rings
 #define MUSHROOM_CLOUD_PARTICLES 400
+
+#define ENGINE_BASE_GLOW 0.2f          // Minimum glow intensity
+#define ENGINE_MAX_GLOW 1.0f           // Maximum glow when at full thrust
+#define ENGINE_GLOW_BUILDUP 0.1f       // How quickly glow increases
+#define ENGINE_GLOW_DECAY 0.05f        // How quickly glow fades
+#define ENGINE_GLOW_FLICKER 0.05f      // Random flicker amount
+#define NUM_GLOW_LAYERS 6
 
 extern int gameOver;
 
@@ -69,6 +77,7 @@ typedef struct {
     int aPressed;         // A key state
     int dPressed;         // D key state
     ShipHealth health;
+    float engineGlowIntensity;
 } ShipState;
 
 typedef struct {
