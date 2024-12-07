@@ -22,7 +22,6 @@ void updateMovement(void) {
         MoveShip(dx, dz);
     }
     
-    // Always update ship state (including bullets) regardless of movement
     UpdateShipState();
 }
 

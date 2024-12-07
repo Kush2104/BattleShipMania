@@ -4,7 +4,6 @@
 #include "utils.h"
 #include "battleship.h"
 
-// Real astronomical scales in km
 #define REAL_SUN_RADIUS 696340.0f
 #define REAL_EARTH_RADIUS 6371.0f
 #define REAL_EARTH_ORBIT 149600000.0f
@@ -13,29 +12,26 @@
 #define REAL_URANUS_RADIUS 25362.0f
 #define REAL_NEPTUNE_RADIUS 24622.0f
 
-#define SATURN_RING_INNER 1.2f   // Multiplier of planet radius
-#define SATURN_RING_OUTER 2.5f   // Saturn's rings are extensive
+#define SATURN_RING_INNER 1.2f   
+#define SATURN_RING_OUTER 2.5f   
 #define URANUS_RING_INNER 1.4f
 #define URANUS_RING_OUTER 2.0f
-#define NEPTUNE_RING_INNER 1.1f  // Neptune has thin, faint rings
+#define NEPTUNE_RING_INNER 1.1f  
 #define NEPTUNE_RING_OUTER 1.5f
 #define RING_SEGMENTS 180
 
 #define MAX_FLARE_ALPHA 0.7f
 #define NUM_FLARE_ELEMENTS 4
 
-// Scale factors to make the game playable
 #define SPACE_SCALE_FACTOR 0.00002f    
 #define BODY_SCALE_FACTOR 0.0001f      
 
-// Types of celestial objects
 #define CELESTIAL_SUN 0
 #define CELESTIAL_PLANET 1
 #define CELESTIAL_ASTEROID 2
 #define CELESTIAL_COMET 3
 #define CELESTIAL_SPACE_STATION 4
 
-// Asteroid belt configuration
 #define ASTEROID_SCALE_FACTOR 5.0f
 #define MIN_ASTEROID_VERTICES 24
 #define MAX_ASTEROID_VERTICES 32
@@ -51,25 +47,22 @@
 
 #define STATION_ROTATION_SPEED 0.1f
 #define STATION_RING_SPEED 0.5f
-#define STATION_ORBIT_DISTANCE 50.0f  // Closer to Earth
+#define STATION_ORBIT_DISTANCE 50.0f  
 #define STATION_BASE_SIZE 1.1f
 
 #define MIN_ORBIT_SPEED 0.0001f
 #define MAX_ORBIT_SPEED 0.0002f
 
-// Asteroid destruction system
 #define MAX_FRAGMENTS 8
 #define FRAGMENT_LIFETIME 200
 #define MAX_HEALTH 3
 #define EXPLOSION_RADIUS 15.0f
 
-// Basic 3D vertex with texture coordinates
 typedef struct {
     float x, y, z;
     float u, v;
 } Vertex3D;
 
-// Fragment system for asteroid destruction
 typedef struct {
     Vertex3D* vertices;
     int numVertices;
@@ -82,7 +75,6 @@ typedef struct {
     int active;
 } Fragment;
 
-// Main asteroid structure
 typedef struct {
     Vertex3D* vertices;
     int numVertices;
@@ -99,7 +91,6 @@ typedef struct {
     int fragmentsActive;
 } Asteroid;
 
-// Structure for all celestial bodies (planets, sun, etc)
 typedef struct {
     float x, y, z;
     float radius;
@@ -122,7 +113,6 @@ extern int bodyCount;
 extern Asteroid* asteroids;
 extern int asteroidBeltInitialized;
 
-// Core system functions
 void initSolarSystem(void);
 void updateSolarSystem(void);
 void drawSolarSystem(void);
@@ -131,7 +121,6 @@ void drawPlanetRings(float innerRadius, float outerRadius, float r, float g, flo
 float getScaledDistance(float realDistance);
 float getScaledRadius(float realRadius);
 
-// Asteroid related functions
 void drawAsteroid(Asteroid* asteroid);
 Vertex3D* generateAsteroidVertices(int* numVertices);
 void initFragments(Asteroid* asteroid);
@@ -139,7 +128,6 @@ void updateFragments(Asteroid* asteroid);
 void drawFragments(Asteroid* asteroid);
 void drawExplosionEffect(float x, float y, float z, float radius, float alpha);
 
-// Draw functions for different celestial objects
 void drawAsteroidBelt(CelestialBody* belt);
 void drawComet(CelestialBody* comet);
 void drawSpaceStation(CelestialBody* station);
