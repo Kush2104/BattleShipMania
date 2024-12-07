@@ -616,9 +616,7 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
 
 void initFragments(Asteroid* asteroid) {
     asteroid->fragmentsActive = 1;
-    
-    float baseSize = (MAX_ASTEROID_RADIUS + MIN_ASTEROID_RADIUS) / 2.0f;
-    
+        
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
         
