@@ -21,7 +21,7 @@ float smoothNoise(float x, float y, float z) {
 
 void initSolarSystem(void) {
     bodyCount = 0;
-    
+
     CelestialBody* sun = &solarBodies[bodyCount++];
     sun->originalRadius = REAL_SUN_RADIUS;
     sun->radius = getScaledRadius(REAL_SUN_RADIUS);
@@ -93,7 +93,6 @@ void initSolarSystem(void) {
     mars->color[0] = mars->color[1] = mars->color[2] = mars->color[3] = 1.0f;
     mars->name = "Mars";
 
-    // Add the gas giants
     CelestialBody* jupiter = &solarBodies[bodyCount++];
     jupiter->originalRadius = REAL_JUPITER_RADIUS;
     jupiter->radius = 80.0f;
@@ -184,11 +183,11 @@ void setupSolarLighting(void) {
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
     glShadeModel(GL_SMOOTH);
-    
+
     GLfloat light_ambient[] = { 0.1f, 0.1f, 0.1f, 1.0f };
     GLfloat light_diffuse[] = { 1.2f, 1.2f, 1.2f, 1.0f };
     GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    
+
     glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
@@ -200,28 +199,27 @@ void setupSolarLighting(void) {
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
-
 void drawPlanetRings(float innerRadius, float outerRadius, float r, float g, float b, float alpha) {
     glPushMatrix();
-    
+
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     float ringWidth = outerRadius - innerRadius;
-    int numRings = 8;  // Create multiple rings for better visual effect
-    
+    int numRings = 8;  
+
     for(int i = 0; i < numRings; i++) {
         float localInner = innerRadius + (ringWidth * i / numRings);
         float localOuter = innerRadius + (ringWidth * (i + 1) / numRings);
-        float localAlpha = alpha * (1.0f - (float)i/numRings * 0.3f);  // Fade outer rings slightly
-        
+        float localAlpha = alpha * (1.0f - (float)i/numRings * 0.3f);  
+
         glBegin(GL_QUAD_STRIP);
         for(int j = 0; j <= RING_SEGMENTS; j++) {
             float angle = (float)j/RING_SEGMENTS * 2.0f * M_PI;
             float cos_angle = cos(angle);
             float sin_angle = sin(angle);
-            
+
             glColor4f(r, g, b, localAlpha);
             glVertex3f(cos_angle * localInner, 0, sin_angle * localInner);
             glVertex3f(cos_angle * localOuter, 0, sin_angle * localOuter);
@@ -239,20 +237,20 @@ void drawBody(CelestialBody* body) {
         glPushMatrix();
         glTranslatef(body->x, body->y, body->z);
         glRotatef(body->currentRotation, 0, 1, 0);
-        
+
         glDisable(GL_LIGHTING);
-        
+
         glColor4f(body->color[0], body->color[1], body->color[2], body->color[3]);
         Sphere(0, 0, 0, body->radius);
-        
+
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-        
+
         const int CORONA_LAYERS = 8;
         for(int i = 0; i < CORONA_LAYERS; i++) {
             float scale = 1.0f + (i * 0.15f);
             float alpha = 0.3f * (1.0f - ((float)i / CORONA_LAYERS));
-            
+
             glColor4f(
                 body->color[0],
                 body->color[1] * (1.0f - (i * 0.1f)),
@@ -261,22 +259,22 @@ void drawBody(CelestialBody* body) {
             );
             Sphere(0, 0, 0, body->radius * scale);
         }
-        
+
         glDisable(GL_BLEND);
         glPopMatrix();
 
         GLfloat light_position[] = { body->x, body->y, body->z, 1.0f };
         glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-        
+
         glEnable(GL_LIGHTING);
     }
     else if(body->type == CELESTIAL_PLANET) {
         glPushMatrix();
-        
+
         float orbitAngleRad = body->orbitAngle * M_PI / 180.0f;
         body->x = cos(orbitAngleRad) * body->orbitRadius;
         body->z = sin(orbitAngleRad) * body->orbitRadius;
-        
+
         glTranslatef(body->x, body->y, body->z);
         glRotatef(body->currentRotation, 0, 1, 0);
 
@@ -293,8 +291,7 @@ void drawBody(CelestialBody* body) {
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
         glEnable(GL_TEXTURE_2D);
-        
-        // Select appropriate texture
+
         if (strcmp(body->name, "Earth") == 0) {
             glBindTexture(GL_TEXTURE_2D, earthTexture);
         } else if (strcmp(body->name, "Mars") == 0) {
@@ -312,28 +309,27 @@ void drawBody(CelestialBody* body) {
         } else if (strcmp(body->name, "Neptune") == 0) {
             glBindTexture(GL_TEXTURE_2D, neptuneTexture);
         }
-        
+
         glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-        
-        // Draw the planet sphere
+
         const int stacks = 32;
         const int slices = 32;
         const float r = body->radius;
-        
+
         for (int i = 0; i < stacks; i++) {
             float lat0 = M_PI * (-0.5 + (float)i / stacks);
             float lat1 = M_PI * (-0.5 + (float)(i + 1) / stacks);
-            
+
             glBegin(GL_QUAD_STRIP);
             for (int j = 0; j <= slices; j++) {
                 float lng = 2 * M_PI * (float)j / slices;
-                
+
                 for (int k = 0; k <= 1; k++) {
                     float lat = k ? lat1 : lat0;
                     float y = sin(lat);
                     float x = cos(lng) * cos(lat);
                     float z = sin(lng) * cos(lat);
-                    
+
                     glTexCoord2f((float)j / slices, (float)(i + k) / stacks);
                     glNormal3f(x, y, z);
                     glVertex3f(r * x, r * y, r * z);
@@ -341,10 +337,9 @@ void drawBody(CelestialBody* body) {
             }
             glEnd();
         }
-        
+
         glDisable(GL_TEXTURE_2D);
 
-        // Draw rings for gas giants
         if (strcmp(body->name, "Saturn") == 0) {
             glRotatef(26.73f, 1, 0, 0);
             drawPlanetRings(body->radius * SATURN_RING_INNER, body->radius * SATURN_RING_OUTER, 
@@ -359,7 +354,7 @@ void drawBody(CelestialBody* body) {
             drawPlanetRings(body->radius * NEPTUNE_RING_INNER, body->radius * NEPTUNE_RING_OUTER,
                            0.3f, 0.3f, 0.3f, 0.2f);
         }
-        
+
         glPopMatrix();
     }
     else if(body->type == CELESTIAL_ASTEROID) {
@@ -376,14 +371,14 @@ void drawBody(CelestialBody* body) {
 void updateSolarSystem(void) {
     for(int i = 0; i < bodyCount; i++) {
         CelestialBody* body = &solarBodies[i];
-        
+
         body->currentRotation += body->rotationSpeed;
         if(body->currentRotation >= 360.0f) body->currentRotation -= 360.0f;
-        
+
         if(body->type == CELESTIAL_PLANET) {
             body->orbitAngle += body->orbitSpeed;
             if(body->orbitAngle >= 360.0f) body->orbitAngle -= 360.0f;
-            
+
             float angleRad = body->orbitAngle * M_PI / 180.0f;
             body->x = cos(angleRad) * body->orbitRadius;
             body->z = sin(angleRad) * body->orbitRadius;
@@ -394,7 +389,7 @@ void updateSolarSystem(void) {
 
 void drawSolarSystem(void) {
     setupSolarLighting();
-    
+
     GLfloat light_position[] = {
         solarBodies[0].x,
         solarBodies[0].y,
@@ -416,7 +411,6 @@ float getScaledRadius(float realRadius) {
     return realRadius * BODY_SCALE_FACTOR;
 }
 
-// Asteroid related functions
 void drawAsteroid(Asteroid* asteroid) {
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -440,14 +434,14 @@ void drawAsteroid(Asteroid* asteroid) {
 
     int horizontalSegments = (MIN_ASTEROID_VERTICES / 2);
     int verticalSegments = 6;
-    
+
     glBegin(GL_TRIANGLE_FAN);
     glNormal3f(0, 1, 0);
     glTexCoord2f(0.5f, 0.0f);
     glVertex3f(asteroid->vertices[0].x, 
               asteroid->vertices[0].y, 
               asteroid->vertices[0].z);
-              
+
     for (int j = 0; j <= horizontalSegments; j++) {
         int idx = 1 + (j % horizontalSegments);
         Vertex3D v = asteroid->vertices[idx];
@@ -457,7 +451,7 @@ void drawAsteroid(Asteroid* asteroid) {
         glVertex3f(v.x, v.y, v.z);
     }
     glEnd();
-    
+
     for (int i = 0; i < verticalSegments - 2; i++) {
         glBegin(GL_TRIANGLE_STRIP);
         for (int j = 0; j <= horizontalSegments; j++) {
@@ -473,7 +467,7 @@ void drawAsteroid(Asteroid* asteroid) {
         }
         glEnd();
     }
-    
+
     glBegin(GL_TRIANGLE_FAN);
     int lastIdx = asteroid->numVertices - 1;
     glNormal3f(0, -1, 0);
@@ -481,7 +475,7 @@ void drawAsteroid(Asteroid* asteroid) {
     glVertex3f(asteroid->vertices[lastIdx].x, 
               asteroid->vertices[lastIdx].y, 
               asteroid->vertices[lastIdx].z);
-              
+
     int startIdx = lastIdx - horizontalSegments;
     for (int j = horizontalSegments; j >= 0; j--) {
         int idx = startIdx + (j % horizontalSegments);
@@ -498,12 +492,12 @@ void drawAsteroid(Asteroid* asteroid) {
 
 void drawAsteroidBelt(CelestialBody* belt) {
     static float* fixedY = NULL;
-    
+
     if (!asteroidBeltInitialized) {
         srand(1234);
         asteroids = (Asteroid*)malloc(sizeof(Asteroid) * NUM_ASTEROIDS);
         fixedY = (float*)malloc(sizeof(float) * NUM_ASTEROIDS);
-        
+
         for (int i = 0; i < NUM_ASTEROIDS; i++) {
             asteroids[i].numVertices = 0;
             asteroids[i].vertices = generateAsteroidVertices(&asteroids[i].numVertices);
@@ -520,32 +514,32 @@ void drawAsteroidBelt(CelestialBody* belt) {
         }
         asteroidBeltInitialized = 1;
     }
-    
+
     for (int i = 0; i < NUM_ASTEROIDS; i++) {
         if (asteroids[i].active) {
             asteroids[i].orbitAngle += asteroids[i].orbitSpeed;
-            
+
             float x = cos(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
             float z = sin(asteroids[i].orbitAngle) * asteroids[i].orbitRadius;
-            
+
             asteroids[i].x = x;
             asteroids[i].y = fixedY[i];
             asteroids[i].z = z;
-            
+
             glPushMatrix();
             glTranslatef(x, fixedY[i], z);
             glRotatef(asteroids[i].rotation, 0, 1, 0);
             drawAsteroid(&asteroids[i]);
             glPopMatrix();
         }
-        
+
         if (asteroids[i].fragmentsActive) {
             updateFragments(&asteroids[i]);
             drawFragments(&asteroids[i]);
-            
+
             static float explosionRadius = 0.0f;
             static float explosionAlpha = 1.0f;
-            
+
             if (explosionRadius < EXPLOSION_RADIUS) {
                 explosionRadius += 0.5f;
                 explosionAlpha = 1.0f - (explosionRadius / EXPLOSION_RADIUS);
@@ -563,92 +557,89 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
     *numVertices = MIN_ASTEROID_VERTICES;
     int verticalSegments = 6;
     int horizontalSegments = *numVertices / 2;
-    
+
     int totalVertices = (verticalSegments - 1) * horizontalSegments + 2;
     Vertex3D* vertices = (Vertex3D*)malloc(sizeof(Vertex3D) * totalVertices);
-    
+
     float baseRadius = MIN_ASTEROID_RADIUS + 
                       ((float)rand() / RAND_MAX) * (MAX_ASTEROID_RADIUS - MIN_ASTEROID_RADIUS);
 
     int idx = 0;
-    
+
     vertices[idx].x = 0;
     vertices[idx].y = baseRadius;
     vertices[idx].z = 0;
     vertices[idx].u = 0.5f;
     vertices[idx].v = 0.0f;
     idx++;
-    
+
     for (int i = 1; i < verticalSegments; i++) {
         float phi = M_PI * i / verticalSegments;
         float y = baseRadius * cos(phi);
         float radius = baseRadius * sin(phi);
         float v = (float)i / verticalSegments;
-        
+
         for (int j = 0; j < horizontalSegments; j++) {
             float theta = 2 * M_PI * j / horizontalSegments;
             float u = (float)j / horizontalSegments;
-            
+
             float x = radius * cos(theta);
             float z = radius * sin(theta);
-            
+
             float distortion = 1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS;
-            
+
             vertices[idx].x = x * distortion;
             vertices[idx].y = y * (1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS);
             vertices[idx].z = z * distortion;
             vertices[idx].u = u;
             vertices[idx].v = v;
-            
+
             idx++;
         }
     }
-    
+
     vertices[idx].x = 0;
     vertices[idx].y = -baseRadius;
     vertices[idx].z = 0;
     vertices[idx].u = 0.5f;
     vertices[idx].v = 1.0f;
-    
+
     *numVertices = totalVertices;
     return vertices;
 }
 
 void initFragments(Asteroid* asteroid) {
     asteroid->fragmentsActive = 1;
-        
+
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
-        
+
         int fragVertices = asteroid->numVertices / 3;
         f->vertices = generateAsteroidVertices(&fragVertices);
         f->numVertices = fragVertices;
-        
+
         f->x = asteroid->x;
         f->y = asteroid->y;
         f->z = asteroid->z;
-        
-        // Increased explosion velocity
+
         float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
         float elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
-        float speed = 5.0f + ((float)rand() / RAND_MAX) * 7.0f;  // Much faster speed range
-        
+        float speed = 5.0f + ((float)rand() / RAND_MAX) * 7.0f;  
+
         f->vx = speed * cos(angle) * cos(elevation);
         f->vy = speed * sin(elevation);
         f->vz = speed * sin(angle) * cos(elevation);
-        
+
         f->rotX = ((float)rand() / RAND_MAX) * 360.0f;
         f->rotY = ((float)rand() / RAND_MAX) * 360.0f;
         f->rotZ = ((float)rand() / RAND_MAX) * 360.0f;
-        
-        // Increased rotation speeds
+
         f->rotVelX = ((float)rand() / RAND_MAX - 0.5f) * 30.0f;
         f->rotVelY = ((float)rand() / RAND_MAX - 0.5f) * 30.0f;
         f->rotVelZ = ((float)rand() / RAND_MAX - 0.5f) * 30.0f;
-        
-        // Reduced scale back to a reasonable size
+
         f->scale = 0.3f + ((float)rand() / RAND_MAX) * 0.2f;
-        
+
         f->lifetime = FRAGMENT_LIFETIME;
         f->active = 1;
     }
@@ -656,22 +647,22 @@ void initFragments(Asteroid* asteroid) {
 
 void updateFragments(Asteroid* asteroid) {
     if (!asteroid->fragmentsActive) return;
-    
+
     int activeCount = 0;
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
         if (!f->active) continue;
-        
+
         f->x += f->vx;
         f->y += f->vy;
         f->z += f->vz;
-        
+
         f->vy -= 0.01f;
-        
+
         f->rotX += f->rotVelX;
         f->rotY += f->rotVelY;
         f->rotZ += f->rotVelZ;
-        
+
         f->lifetime--;
         if (f->lifetime <= 0) {
             f->active = 0;
@@ -683,7 +674,7 @@ void updateFragments(Asteroid* asteroid) {
             activeCount++;
         }
     }
-    
+
     if (activeCount == 0) {
         asteroid->fragmentsActive = 0;
     }
@@ -691,53 +682,52 @@ void updateFragments(Asteroid* asteroid) {
 
 void drawFragments(Asteroid* asteroid) {
     if (!asteroid->fragmentsActive) return;
-    
+
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, asteroid->textureId);
-    
+
     GLfloat mat_ambient[] = { 0.3f, 0.3f, 0.3f, 1.0f };
     GLfloat mat_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     GLfloat mat_specular[] = { 0.4f, 0.4f, 0.4f, 1.0f };
     GLfloat mat_shininess[] = { 32.0f };
-    
+
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-    
+
     for (int i = 0; i < MAX_FRAGMENTS; i++) {
         Fragment* f = &asteroid->fragments[i];
         if (!f->active) continue;
-        
+
         glPushMatrix();
         glTranslatef(f->x, f->y, f->z);
         glRotatef(f->rotX, 1, 0, 0);
         glRotatef(f->rotY, 0, 1, 0);
         glRotatef(f->rotZ, 0, 0, 1);
-        
-        // Reduced visual scale
-        float visualScale = f->scale * 2.0f;  // Now only 2x instead of 5x
+
+        float visualScale = f->scale * 2.0f;  
         glScalef(visualScale, visualScale, visualScale);
-        
+
         const int stacks = 12;
         const int slices = 12;
         const float r = 1.0f;
-        
+
         for (int stack = 0; stack < stacks; stack++) {
             float phi1 = M_PI * (-0.5 + (float)stack / stacks);
             float phi2 = M_PI * (-0.5 + (float)(stack + 1) / stacks);
-            
+
             glBegin(GL_QUAD_STRIP);
             for (int slice = 0; slice <= slices; slice++) {
                 float theta = 2.0f * M_PI * (float)slice / slices;
-                
+
                 for (int k = 0; k <= 1; k++) {
                     float phi = k ? phi2 : phi1;
                     float y = sin(phi);
                     float c = cos(phi);
                     float x = c * cos(theta);
                     float z = c * sin(theta);
-                    
+
                     glTexCoord2f((float)slice / slices, (float)(stack + k) / stacks);
                     glNormal3f(x, y, z);
                     glVertex3f(r * x, r * y, r * z);
@@ -745,30 +735,30 @@ void drawFragments(Asteroid* asteroid) {
             }
             glEnd();
         }
-        
+
         glPopMatrix();
     }
-    
+
     glDisable(GL_TEXTURE_2D);
 }
 
 void drawExplosionEffect(float x, float y, float z, float radius, float alpha) {
     glPushMatrix();
     glTranslatef(x, y, z);
-    
+
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    
+
     float innerRadius = radius * 0.7f;
     float outerRadius = radius;
-    
+
     glColor4f(1.0f, 0.8f, 0.2f, alpha);
     glutSolidSphere(innerRadius, 20, 20);
-    
+
     glColor4f(1.0f, 0.4f, 0.0f, alpha * 0.5f);
     glutSolidSphere(outerRadius, 20, 20);
-    
+
     glEnable(GL_LIGHTING);
     glDisable(GL_BLEND);
     glPopMatrix();
@@ -796,49 +786,49 @@ void cleanupAsteroids(void) {
 
 void drawComet(CelestialBody* comet) {
     glPushMatrix();
-    
+
     float orbitAngleRad = comet->orbitAngle * M_PI / 180.0f;
     comet->x = cos(orbitAngleRad) * comet->orbitRadius;
     comet->z = sin(orbitAngleRad) * comet->orbitRadius;
     comet->y = sin(orbitAngleRad * 0.5f) * comet->orbitRadius * 0.3f;
-    
+
     glTranslatef(comet->x, comet->y, comet->z);
-    
+
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    
+
     glColor4f(1.0f, 0.95f, 0.8f, 1.0f);
     glutSolidSphere(comet->radius * 0.3f, 20, 20);
-    
+
     float glowSizes[] = {0.4f, 0.5f, 0.7f};
     float glowAlphas[] = {0.7f, 0.5f, 0.3f};
     for(int i = 0; i < 3; i++) {
         glColor4f(1.0f, 0.95f, 0.8f, glowAlphas[i]);
         glutSolidSphere(comet->radius * glowSizes[i], 20, 20);
     }
-    
+
     float tailLength = comet->radius * 30.0f;
     float spreadBase = comet->radius * 0.5f;
     int numParticles = 500;
-    
+
     glPointSize(2.0f);
     glBegin(GL_POINTS);
-    
+
     for(int i = 0; i < numParticles; i++) {
         float t = (float)i / numParticles;
         float spread = spreadBase + (t * comet->radius * 2.0f);
-        
+
         float x = -tailLength * t;
-        
+
         float rand1 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
         float rand2 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
         float y = rand1 * spread;
         float z = rand2 * spread;
-        
+
         float brightness = 1.0f - (t * 0.8f);
         float alpha = 1.0f - (t * t);
-        
+
         if(rand() % 4 == 0) {
             glColor4f(1.0f, 1.0f, 1.0f, alpha);
             glPointSize(3.0f);
@@ -846,43 +836,43 @@ void drawComet(CelestialBody* comet) {
             glColor4f(0.8f * brightness, 0.9f * brightness, 1.0f, alpha * 0.5f);
             glPointSize(2.0f);
         }
-        
+
         glVertex3f(x, y, z);
     }
     glEnd();
-    
+
     glBegin(GL_QUAD_STRIP);
     float streamWidth = comet->radius * 0.5f;
     float streamLength = tailLength * 0.7f;
     int segments = 30;
-    
+
     for(int i = 0; i <= segments; i++) {
         float t = (float)i / segments;
         float x = -streamLength * t;
         float alpha = 1.0f - (t * t);
-        
+
         glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.5f);
         glVertex3f(x, streamWidth * (1.0f - t), 0.0f);
         glVertex3f(x, -streamWidth * (1.0f - t), 0.0f);
     }
     glEnd();
-    
+
     glBegin(GL_LINES);
     for(int i = 0; i < 50; i++) {
         float t = (float)rand() / RAND_MAX;
         float x1 = -tailLength * t;
         float y1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
         float z1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
-        
+
         float length = comet->radius * (1.0f + t);
         float alpha = 1.0f - t;
-        
+
         glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.3f);
         glVertex3f(x1, y1, z1);
         glVertex3f(x1 - length, y1, z1);
     }
     glEnd();
-    
+
     glEnable(GL_LIGHTING);
     glDisable(GL_BLEND);
     glPointSize(1.0f);
@@ -891,40 +881,35 @@ void drawComet(CelestialBody* comet) {
 
 void drawSpaceStation(CelestialBody* station) {
     glPushMatrix();
-    
-    // Calculate position relative to Earth
+
     CelestialBody* earth = &solarBodies[3];
     float offsetAngle = station->currentRotation * M_PI / 180.0f;
-    
+
     station->x = earth->x + STATION_ORBIT_DISTANCE * cos(offsetAngle);
     station->z = earth->z + STATION_ORBIT_DISTANCE * sin(offsetAngle);
     station->y = earth->y + STATION_ORBIT_DISTANCE * 0.1f * sin(offsetAngle * 2.0f);
-    
+
     glTranslatef(station->x, station->y, station->z);
     glRotatef(station->currentRotation, 0, 1, 0);
-    
-    // Set material properties
+
     GLfloat mat_ambient[] = { 0.25f, 0.25f, 0.25f, 1.0f };
     GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat mat_specular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
     GLfloat mat_shininess[] = { 64.0f };
-    
+
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-    
+
     float baseSize = STATION_BASE_SIZE;
-    
-    // Central hub
+
     glColor3f(0.7f, 0.7f, 0.7f);
     Cylinder(0, 0, 0, baseSize * 1.2f, baseSize * 3.0f);
-    
-    // Rotating main ring
+
     glPushMatrix();
     glRotatef(station->currentRotation * STATION_RING_SPEED, 0, 1, 0);
-    
-    // Main habitat ring
+
     glColor3f(0.65f, 0.65f, 0.65f);
     for(int i = 0; i < 8; i++) {
         float angle = i * 45.0f;
@@ -935,8 +920,7 @@ void drawSpaceStation(CelestialBody* station) {
              angle, 0, 1, 0);
         glPopMatrix();
     }
-    
-    // Ring connectors
+
     glColor3f(0.6f, 0.6f, 0.6f);
     for(int i = 0; i < 4; i++) {
         glPushMatrix();
@@ -945,40 +929,36 @@ void drawSpaceStation(CelestialBody* station) {
         glPopMatrix();
     }
     glPopMatrix();
-    
-    // Solar panel arrays
+
     glPushMatrix();
     glRotatef(-station->currentRotation * STATION_RING_SPEED * 0.5f, 0, 1, 0);
-    
+
     for(int i = -1; i <= 1; i += 2) {
-        // Panel mount
+
         glColor3f(0.7f, 0.7f, 0.7f);
         Cube(0, 0, i * baseSize * 3,
              baseSize * 0.3f, baseSize * 0.3f, baseSize * 2.0f,
              0, 0, 0, 1);
-        
-        // Solar panels
+
         glColor3f(0.2f, 0.3f, 0.8f);
         Cube(baseSize * 2, 0, i * baseSize * 3,
              baseSize * 4.0f, baseSize * 0.1f, baseSize * 1.5f,
              0, 0, 0, 1);
-        
+
         Cube(-baseSize * 2, 0, i * baseSize * 3,
              baseSize * 4.0f, baseSize * 0.1f, baseSize * 1.5f,
              0, 0, 0, 1);
     }
     glPopMatrix();
-    
-    // Docking section
+
     glColor3f(0.75f, 0.75f, 0.75f);
     Cylinder(0, baseSize * 2, 0, baseSize * 0.8f, baseSize * 1.0f);
-    
-    // Communication array
+
     glPushMatrix();
     glTranslatef(0, baseSize * 3, 0);
     glRotatef(station->currentRotation * 2, 0, 1, 0);
     glColor3f(0.8f, 0.8f, 0.8f);
-    
+
     for(int i = 0; i < 4; i++) {
         glPushMatrix();
         glRotatef(i * 90, 0, 1, 0);
@@ -988,6 +968,6 @@ void drawSpaceStation(CelestialBody* station) {
         glPopMatrix();
     }
     glPopMatrix();
-    
+
     glPopMatrix();
 }

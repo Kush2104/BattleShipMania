@@ -6,42 +6,42 @@
 #include "init.h"
 #include "input.h"
 
-#define MAX_BULLETS 50           // Increased from 20
-#define BULLET_LIFETIME 500     // New constant for bullet lifetime
+#define MAX_BULLETS 50           
+#define BULLET_LIFETIME 500     
 #define BULLET_VIEW_DISTANCE 1000.0f
-#define BULLET_SPEED 5  // Speed of bullets
-#define FIRE_RATE 10  // Cooldown between shots
-#define ROTATION_SPEED 2.0  // Ship rotation speed
-#define MOVE_SPEED 2.0  // Ship movement speed
-#define MAX_PITCH 15.0  // Maximum pitch angle
-#define MAX_ROLL 45.0  // Maximum roll angle
-#define PITCH_RETURN_SPEED 2.0  // Speed at which pitch returns to neutral
-#define ROLL_RETURN_SPEED 2.0  // Speed at which roll returns to neutral
+#define BULLET_SPEED 5  
+#define FIRE_RATE 10  
+#define ROTATION_SPEED 2.0  
+#define MOVE_SPEED 2.0  
+#define MAX_PITCH 15.0  
+#define MAX_ROLL 45.0  
+#define PITCH_RETURN_SPEED 2.0  
+#define ROLL_RETURN_SPEED 2.0  
 
-#define SHIP_START_X 1000.0f  // Closer to Earth's orbit
+#define SHIP_START_X 1000.0f  
 #define SHIP_START_Z 1000.0f 
 
 #define INITIAL_HEALTH 5
-#define SUN_DAMAGE 10        // Instant death
-#define COMET_DAMAGE 3       // Significant damage
-#define STATION_DAMAGE 2     // Medium damage
-#define ASTEROID_DAMAGE 1    // Small damage
+#define SUN_DAMAGE 10        
+#define COMET_DAMAGE 3       
+#define STATION_DAMAGE 2     
+#define ASTEROID_DAMAGE 1    
 #define PLANET_DAMAGE 5 
-#define COLLISION_INVULNERABILITY_TIME 60  // Frames of invulnerability after hit
-#define COLLISION_CHECK_RADIUS 5.0f  // Radius for checking collisions
+#define COLLISION_INVULNERABILITY_TIME 60  
+#define COLLISION_CHECK_RADIUS 5.0f  
 
-#define EXPLOSION_PARTICLE_COUNT 1000   // More particles for bigger explosion
-#define EXPLOSION_LIFETIME 1000          // 4 seconds at 60fps
-#define INITIAL_EXPLOSION_SIZE 4.0f     // Much bigger initial size
-#define EXPLOSION_SPREAD 20.0f          // Much wider spread
-#define SHOCKWAVE_COUNT 3              // Multiple shockwave rings
+#define EXPLOSION_PARTICLE_COUNT 1000   
+#define EXPLOSION_LIFETIME 1000          
+#define INITIAL_EXPLOSION_SIZE 4.0f     
+#define EXPLOSION_SPREAD 20.0f          
+#define SHOCKWAVE_COUNT 3              
 #define MUSHROOM_CLOUD_PARTICLES 400
 
-#define ENGINE_BASE_GLOW 0.2f          // Minimum glow intensity
-#define ENGINE_MAX_GLOW 1.0f           // Maximum glow when at full thrust
-#define ENGINE_GLOW_BUILDUP 0.1f       // How quickly glow increases
-#define ENGINE_GLOW_DECAY 0.05f        // How quickly glow fades
-#define ENGINE_GLOW_FLICKER 0.05f      // Random flicker amount
+#define ENGINE_BASE_GLOW 0.2f          
+#define ENGINE_MAX_GLOW 1.0f           
+#define ENGINE_GLOW_BUILDUP 0.1f       
+#define ENGINE_GLOW_DECAY 0.05f        
+#define ENGINE_GLOW_FLICKER 0.05f      
 #define NUM_GLOW_LAYERS 6
 
 extern int gameOver;
@@ -53,7 +53,7 @@ typedef struct {
     float vx, vy, vz;
     float lifetime;
     float size;
-    float r, g, b, a;  // Color with alpha
+    float r, g, b, a;  
 } ExplosionParticle;
 
 typedef struct {
@@ -62,35 +62,33 @@ typedef struct {
     int invulnerabilityFrames;
     int explosionTimer;
     ExplosionParticle* explosionParticles;
-    int explosionStage;     // Current stage of explosion
-    float shockwaveSize;    // Size of expanding shockwave
+    int explosionStage;     
+    float shockwaveSize;    
     int explosionFlashTime;
 } ShipHealth;
 
 typedef struct {
-    float x, y, z;         // Position
-    float yaw;            // Left/right rotation
-    float pitch;          // Up/down rotation
-    float roll;           // Left/right tilt (banking)
-    int wPressed;         // W key state
-    int sPressed;         // S key state
-    int aPressed;         // A key state
-    int dPressed;         // D key state
+    float x, y, z;         
+    float yaw;            
+    float pitch;          
+    float roll;           
+    int wPressed;         
+    int sPressed;         
+    int aPressed;         
+    int dPressed;         
     ShipHealth health;
     float engineGlowIntensity;
 } ShipState;
 
 typedef struct {
-    float x, y, z;     // Position
-    float dirX, dirY, dirZ;  // Direction vector
-    int active;        // Whether bullet is currently flying
+    float x, y, z;     
+    float dirX, dirY, dirZ;  
+    int active;        
 } Bullet;
 
-// Global variables
 extern ShipState shipState;
 extern Bullet bullets[MAX_BULLETS];
 
-// Function declarations
 void SetupCamera(void);
 void drawBattleship(void);
 void DrawBullet(float x, float y, float z);
@@ -102,7 +100,7 @@ void SetPitchPressed(int isW, int state);
 void SetRollPressed(int isA, int state);
 void UpdateShipState(void);
 void UpdateRoll(void);
-void checkBulletAsteroidCollisions(void);  // Add this declaration
+void checkBulletAsteroidCollisions(void);  
 
 void initializeShipHealth(void);
 void updateShipHealth(void);

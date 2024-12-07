@@ -26,7 +26,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// Texture loading function
 GLuint LoadBMP(const char *filename);
 void Cylinder(double x, double y, double z, double radius, double height);
 void Cone(double x, double y, double z, double radius, double height);
