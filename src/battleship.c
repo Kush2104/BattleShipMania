@@ -762,6 +762,86 @@ void UpdateShipState(void) {
     checkBulletAsteroidCollisions();
 }
 
+void drawEngineGlow(void) {
+    // Update glow intensity based on forward movement
+    if (keyStates.upPressed) {
+        shipState.engineGlowIntensity = fmin(ENGINE_MAX_GLOW, 
+            shipState.engineGlowIntensity + ENGINE_GLOW_BUILDUP);
+    } else {
+        shipState.engineGlowIntensity = fmax(ENGINE_BASE_GLOW, 
+            shipState.engineGlowIntensity - ENGINE_GLOW_DECAY);
+    }
+    
+    // Add random flicker
+    float flicker = 1.0f + ((float)rand() / RAND_MAX - 0.5f) * ENGINE_GLOW_FLICKER;
+    float glowIntensity = shipState.engineGlowIntensity * flicker;
+    
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    // Draw multiple layers of engine glow
+    for (int i = 0; i < NUM_GLOW_LAYERS; i++) {
+        float layerSize = 0.1f + (i * 0.05f);
+        float alpha = glowIntensity * (1.0f - ((float)i / NUM_GLOW_LAYERS));
+        
+        // Left engine glow
+        glPushMatrix();
+        glTranslatef(1.0, -0.05, -0.15);
+        
+        // Core glow (bright orange)
+        glColor4f(1.0f, 0.6f, 0.1f, alpha);
+        Cylinder(0, 0, 0, layerSize, 0.1f);
+        
+        // Outer glow (blue tint)
+        glColor4f(0.2f, 0.4f, 1.0f, alpha * 0.3f);
+        Cylinder(0, 0, 0, layerSize * 1.5f, 0.15f);
+        glPopMatrix();
+        
+        // Right engine glow
+        glPushMatrix();
+        glTranslatef(1.0, -0.05, 0.15);
+        
+        // Core glow
+        glColor4f(1.0f, 0.6f, 0.1f, alpha);
+        Cylinder(0, 0, 0, layerSize, 0.1f);
+        
+        // Outer glow
+        glColor4f(0.2f, 0.4f, 1.0f, alpha * 0.3f);
+        Cylinder(0, 0, 0, layerSize * 1.5f, 0.15f);
+        glPopMatrix();
+
+        // Draw exhaust trails when moving
+        if (keyStates.upPressed) {
+            glBegin(GL_TRIANGLE_STRIP);
+            float trailLength = 2.0f * glowIntensity;
+            float trailWidth = layerSize * 0.8f;
+            
+            // Left engine trail
+            glColor4f(1.0f, 0.3f, 0.0f, alpha);
+            glVertex3f(1.0f, -0.05f, -0.15f - trailWidth);
+            glVertex3f(1.0f, -0.05f, -0.15f + trailWidth);
+            glColor4f(1.0f, 0.3f, 0.0f, 0.0f);
+            glVertex3f(1.0f + trailLength, -0.05f, -0.15f - trailWidth * 1.5f);
+            glVertex3f(1.0f + trailLength, -0.05f, -0.15f + trailWidth * 1.5f);
+            glEnd();
+            
+            // Right engine trail
+            glBegin(GL_TRIANGLE_STRIP);
+            glColor4f(1.0f, 0.3f, 0.0f, alpha);
+            glVertex3f(1.0f, -0.05f, 0.15f - trailWidth);
+            glVertex3f(1.0f, -0.05f, 0.15f + trailWidth);
+            glColor4f(1.0f, 0.3f, 0.0f, 0.0f);
+            glVertex3f(1.0f + trailLength, -0.05f, 0.15f - trailWidth * 1.5f);
+            glVertex3f(1.0f + trailLength, -0.05f, 0.15f + trailWidth * 1.5f);
+            glEnd();
+        }
+    }
+    
+    glEnable(GL_LIGHTING);
+    glDisable(GL_BLEND);
+}
+
 void drawBattleship(void) {
     glPushMatrix();
     
@@ -874,6 +954,8 @@ void drawBattleship(void) {
     Cylinder(-1.0, 0, 0, 0.05, 0.1);  // Cannon housing
     
     glDisable(GL_LIGHTING);
+    drawEngineGlow();
+
     glPopMatrix();
     
     // Draw all active bullets

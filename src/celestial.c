@@ -200,6 +200,7 @@ void setupSolarLighting(void) {
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 }
 
+
 void drawPlanetRings(float innerRadius, float outerRadius, float r, float g, float b, float alpha) {
     glPushMatrix();
     
@@ -401,7 +402,7 @@ void drawSolarSystem(void) {
         1.0f
     };
     glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-    
+
     for(int i = 0; i < bodyCount; i++) {
         drawBody(&solarBodies[i]);
     }

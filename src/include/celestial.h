@@ -21,6 +21,9 @@
 #define NEPTUNE_RING_OUTER 1.5f
 #define RING_SEGMENTS 180
 
+#define MAX_FLARE_ALPHA 0.7f
+#define NUM_FLARE_ELEMENTS 4
+
 // Scale factors to make the game playable
 #define SPACE_SCALE_FACTOR 0.00002f    
 #define BODY_SCALE_FACTOR 0.0001f      
