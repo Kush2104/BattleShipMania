@@ -604,12 +604,9 @@ void checkBulletAsteroidCollisions(void) {
             float dy = bullets[i].y - asteroids[j].y;
             float dz = bullets[i].z - asteroids[j].z;
             float distSq = dx*dx + dy*dy + dz*dz;
-            float collisionRadius = MAX_ASTEROID_RADIUS * 1.5f;
 
-            if (distSq < (collisionRadius * collisionRadius)) {
-
+            if (distSq < (asteroids[j].collisionRadius * asteroids[j].collisionRadius)) {
                 printf("Hit asteroid %d! Health: %d\n", j, asteroids[j].health);  
-
                 bullets[i].active = 0;
                 asteroids[j].health--;
 
