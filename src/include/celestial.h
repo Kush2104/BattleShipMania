@@ -59,6 +59,17 @@
 #define MAX_HEALTH 3
 #define EXPLOSION_RADIUS 15.0f
 
+#define CELESTIAL_UFO 5
+#define NUM_UFOS 20
+#define UFO_DAMAGE 1
+#define UFO_MIN_RADIUS 10.0
+#define UFO_MAX_RADIUS 20.0
+#define UFO_MIN_HEIGHT 5.0
+#define UFO_MAX_HEIGHT 10.0
+#define UFO_ORBIT_DISTANCE 2000.0f
+#define UFO_SPEED_MIN 0.5f
+#define UFO_SPEED_MAX 2.0f
+
 typedef struct {
     float x, y, z;
     float u, v;
@@ -107,12 +118,30 @@ typedef struct {
     float specialEffectTimer;
 } CelestialBody;
 
+typedef struct {
+    float x, y, z;
+    float radius;
+    float height;
+    float rotation;
+    float rotationSpeed;
+    float orbitAngle;
+    float orbitRadius;
+    float orbitSpeed;
+    int active;
+    int health;
+    Fragment fragments[MAX_FRAGMENTS];
+    int fragmentsActive;
+    GLuint textureId;
+} UFO;
+
 #define MAX_BODIES 20
 
 extern CelestialBody solarBodies[MAX_BODIES];
 extern int bodyCount;
 extern Asteroid* asteroids;
 extern int asteroidBeltInitialized;
+extern UFO* ufos;
+extern int ufoInitialized;
 
 void initSolarSystem(void);
 void updateSolarSystem(void);
@@ -132,6 +161,14 @@ void drawExplosionEffect(float x, float y, float z, float radius, float alpha);
 void drawAsteroidBelt(CelestialBody* belt);
 void drawComet(CelestialBody* comet);
 void drawSpaceStation(CelestialBody* station);
+
+void initUFOs(void);
+void drawUFO(UFO* ufo);
+void updateUFOs(void);
+void checkBulletUFOCollisions(void);
+void cleanupUFOs(void);
+void renderUFOs(void);
+
 
 void cleanupAsteroids(void);
 

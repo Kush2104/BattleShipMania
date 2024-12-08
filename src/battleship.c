@@ -252,6 +252,24 @@ void checkShipCollisions(void) {
     extern Asteroid* asteroids;
     extern int asteroidBeltInitialized;
 
+    if (ufoInitialized && ufos != NULL) {
+        for (int i = 0; i < NUM_UFOS; i++) {
+            if (!ufos[i].active || ufos[i].fragmentsActive) continue;
+
+            float dx = shipState.x - ufos[i].x;
+            float dy = shipState.y - ufos[i].y;
+            float dz = shipState.z - ufos[i].z;
+            float distSq = dx*dx + dy*dy + dz*dz;
+
+            float collisionDistance = COLLISION_CHECK_RADIUS + ufos[i].radius;
+
+            if (distSq < (collisionDistance * collisionDistance)) {
+                damageShip(UFO_DAMAGE);
+                break;
+            }
+        }
+    }
+
     if (asteroidBeltInitialized && asteroids != NULL) {
         for (int i = 0; i < NUM_ASTEROIDS; i++) {
             if (!asteroids[i].active || asteroids[i].fragmentsActive) continue;
@@ -525,15 +543,53 @@ void DrawBullet(float x, float y, float z) {
     glPushMatrix();
     glTranslatef(x, y, z);
     
+    // Disable lighting for full brightness
+    glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     
-    glColor4f(1.0, 0.6, 0.0, 1.0);
+    // Core of the bullet - bright orange/yellow
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);  // Additive blending for glow
+    
+    // Inner core - brightest
+    glColor4f(1.0, 1.0, 0.3, 1.0);  // Bright yellow
     Sphere(0, 0, 0, 0.04);
     
-    glColor4f(1.0, 0.3, 0.0, 0.6);
+    // Middle layer - orange
+    glColor4f(1.0, 0.6, 0.0, 0.8);
     Sphere(0, 0, 0, 0.06);
     
+    // Outer glow - larger radius
+    glColor4f(1.0, 0.3, 0.0, 0.4);
+    Sphere(0, 0, 0, 0.08);
+    
+    // Additional glow effects
+    glBegin(GL_QUADS);
+    // Horizontal glow
+    float glowSize = 0.2f;
+    glColor4f(1.0, 0.3, 0.0, 0.3);
+    glVertex3f(-glowSize, 0.0f, -0.02f);
+    glVertex3f(glowSize, 0.0f, -0.02f);
+    glVertex3f(glowSize, 0.0f, 0.02f);
+    glVertex3f(-glowSize, 0.0f, 0.02f);
+    
+    // Vertical glow
+    glVertex3f(-0.02f, -glowSize, 0.0f);
+    glVertex3f(0.02f, -glowSize, 0.0f);
+    glVertex3f(0.02f, glowSize, 0.0f);
+    glVertex3f(-0.02f, glowSize, 0.0f);
+    glEnd();
+    
+    // Trail effect
+    glBegin(GL_TRIANGLES);
+    glColor4f(1.0, 0.6, 0.0, 0.6);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glColor4f(1.0, 0.3, 0.0, 0.0);
+    glVertex3f(-0.3f, 0.08f, 0.0f);
+    glVertex3f(-0.3f, -0.08f, 0.0f);
+    glEnd();
+    
+    // Enable lighting back
+    glEnable(GL_LIGHTING);
     glDisable(GL_BLEND);
     glPopMatrix();
 }

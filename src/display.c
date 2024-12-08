@@ -163,6 +163,9 @@ void idle(void) {
     updateStarBrightness();
 
     UpdateShipState();
+    updateUFOs();
+    checkBulletUFOCollisions();
+
 
     checkBulletAsteroidCollisions();
 

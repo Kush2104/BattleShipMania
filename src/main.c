@@ -42,6 +42,7 @@ int main(int argc, char **argv) {
     initStars();
     initializeShipHealth();
     initSolarSystem();
+    initUFOs();
     initializeInput();
 
     glutDisplayFunc(display);
