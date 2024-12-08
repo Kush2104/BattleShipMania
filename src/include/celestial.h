@@ -33,26 +33,17 @@
 #define CELESTIAL_SPACE_STATION 4
 
 #define ASTEROID_SCALE_FACTOR 5.0f
+#define MIN_ASTEROID_VERTICES 24
+#define MAX_ASTEROID_VERTICES 32
 #define NUM_ASTEROIDS 50
-#define SURFACE_ROUGHNESS 0.4f
+#define MIN_ASTEROID_RADIUS 8.0
+#define MAX_ASTEROID_RADIUS 15.0
+#define SURFACE_ROUGHNESS 0.15f
 #define NOISE_FACTOR 0.4f 
 #define ASTEROID_BELT_DISTANCE 2000.0f
 #define BELT_WIDTH 500.0f
 #define BELT_HEIGHT 50.0f
 #define ASTEROID_Y_SCALE 2.0f
-#define CRATER_DEPTH 0.3f               // New constant for crater depth
-#define CRATER_FREQUENCY 4.0f           // New constant for crater frequency
-#define ELONGATION_FACTOR 1.8f          // New constant for stretching asteroids
-#define RIDGE_HEIGHT 0.2f               // New constant for ridge features
-#define RIDGE_FREQUENCY 3.0f
-#define MIN_ASTEROID_VERTICES 48        // Increased for more detail
-#define MAX_ASTEROID_VERTICES 64
-#define CHUNK_COUNT 6                   // Number of major protrusions/chunks
-#define CHUNK_SIZE_MIN 0.3f            // Relative size of chunks
-#define CHUNK_SIZE_MAX 0.6f
-#define SURFACE_DETAIL_SCALE 0.2f      // Scale of smaller surface details
-#define MIN_ASTEROID_RADIUS 8.0
-#define MAX_ASTEROID_RADIUS 15.0
 
 #define STATION_ROTATION_SPEED 0.1f
 #define STATION_RING_SPEED 0.5f
@@ -71,11 +62,6 @@ typedef struct {
     float x, y, z;
     float u, v;
 } Vertex3D;
-
-typedef struct {
-    float x, y, z;
-    float size;
-} ChunkInfo;
 
 typedef struct {
     Vertex3D* vertices;
@@ -103,7 +89,6 @@ typedef struct {
     int health;
     Fragment fragments[MAX_FRAGMENTS];
     int fragmentsActive;
-    float collisionRadius;
 } Asteroid;
 
 typedef struct {
