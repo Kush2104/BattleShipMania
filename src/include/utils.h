@@ -12,9 +12,6 @@
 #include <float.h>
 #include <errno.h>
 
-#ifdef USEGLEW
-#include <GL/glew.h>
-#endif
 #define GL_GLEXT_PROTOTYPES
 #ifdef __APPLE__
 #include <GLUT/glut.h>

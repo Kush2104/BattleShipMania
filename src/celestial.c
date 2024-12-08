@@ -15,6 +15,8 @@ static GLuint saturnTexture = 0;
 static GLuint uranusTexture = 0;
 static GLuint neptuneTexture = 0;
 
+static float* collisionRadii = NULL;
+
 float smoothNoise(float x, float y, float z) {
     return (float)rand() / RAND_MAX;
 }
@@ -497,10 +499,24 @@ void drawAsteroidBelt(CelestialBody* belt) {
         srand(1234);
         asteroids = (Asteroid*)malloc(sizeof(Asteroid) * NUM_ASTEROIDS);
         fixedY = (float*)malloc(sizeof(float) * NUM_ASTEROIDS);
+        collisionRadii = (float*)malloc(sizeof(float) * NUM_ASTEROIDS);
 
         for (int i = 0; i < NUM_ASTEROIDS; i++) {
             asteroids[i].numVertices = 0;
             asteroids[i].vertices = generateAsteroidVertices(&asteroids[i].numVertices);
+            
+            // Calculate collision radius for this asteroid
+            float maxRadius = 0;
+            for (int j = 0; j < asteroids[i].numVertices; j++) {
+                float distSq = asteroids[i].vertices[j].x * asteroids[i].vertices[j].x +
+                              asteroids[i].vertices[j].y * asteroids[i].vertices[j].y +
+                              asteroids[i].vertices[j].z * asteroids[i].vertices[j].z;
+                maxRadius = fmax(maxRadius, sqrt(distSq));
+            }
+            asteroids[i].collisionRadius = maxRadius * 1.1f;
+            collisionRadii[i] = asteroids[i].collisionRadius;
+
+            // Rest of initialization remains the same
             asteroids[i].rotation = ((float)rand() / RAND_MAX) * 360.0f;
             asteroids[i].rotationSpeed = 0.0f;
             asteroids[i].orbitAngle = ((float)rand() / RAND_MAX) * 2 * M_PI;
@@ -555,51 +571,95 @@ void drawAsteroidBelt(CelestialBody* belt) {
 
 Vertex3D* generateAsteroidVertices(int* numVertices) {
     *numVertices = MIN_ASTEROID_VERTICES;
-    int verticalSegments = 6;
+    int verticalSegments = 12;  // Increased for more detail
     int horizontalSegments = *numVertices / 2;
 
     int totalVertices = (verticalSegments - 1) * horizontalSegments + 2;
     Vertex3D* vertices = (Vertex3D*)malloc(sizeof(Vertex3D) * totalVertices);
+
+    // Generate random chunks (major features)
+    ChunkInfo chunks[CHUNK_COUNT];
+    for (int i = 0; i < CHUNK_COUNT; i++) {
+        float theta = ((float)rand() / RAND_MAX) * 2.0f * M_PI;
+        float phi = ((float)rand() / RAND_MAX) * M_PI;
+        chunks[i].size = CHUNK_SIZE_MIN + ((float)rand() / RAND_MAX) * (CHUNK_SIZE_MAX - CHUNK_SIZE_MIN);
+        chunks[i].x = cos(theta) * sin(phi);
+        chunks[i].y = cos(phi);
+        chunks[i].z = sin(theta) * sin(phi);
+    }
 
     float baseRadius = MIN_ASTEROID_RADIUS + 
                       ((float)rand() / RAND_MAX) * (MAX_ASTEROID_RADIUS - MIN_ASTEROID_RADIUS);
 
     int idx = 0;
 
+    // Top vertex
     vertices[idx].x = 0;
-    vertices[idx].y = baseRadius;
+    vertices[idx].y = baseRadius * (1.0f + ((float)rand() / RAND_MAX - 0.5f) * 0.3f);
     vertices[idx].z = 0;
     vertices[idx].u = 0.5f;
     vertices[idx].v = 0.0f;
     idx++;
 
+    // Generate body vertices
     for (int i = 1; i < verticalSegments; i++) {
         float phi = M_PI * i / verticalSegments;
-        float y = baseRadius * cos(phi);
-        float radius = baseRadius * sin(phi);
+        float baseY = baseRadius * cos(phi);
+        float baseSegmentRadius = baseRadius * sin(phi);
         float v = (float)i / verticalSegments;
 
         for (int j = 0; j < horizontalSegments; j++) {
-            float theta = 2 * M_PI * j / horizontalSegments;
+            float theta = 2.0f * M_PI * j / horizontalSegments;
             float u = (float)j / horizontalSegments;
 
-            float x = radius * cos(theta);
-            float z = radius * sin(theta);
+            // Base sphere point
+            float x = baseSegmentRadius * cos(theta);
+            float y = baseY;
+            float z = baseSegmentRadius * sin(theta);
 
-            float distortion = 1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS;
+            // Apply chunk influence
+            float totalDisplacement = 0;
+            float maxDisplacement = 0;
+            for (int k = 0; k < CHUNK_COUNT; k++) {
+                float dx = x - chunks[k].x * baseRadius;
+                float dy = y - chunks[k].y * baseRadius;
+                float dz = z - chunks[k].z * baseRadius;
+                float dist = sqrt(dx*dx + dy*dy + dz*dz);
+                float influence = chunks[k].size * baseRadius * 
+                    exp(-dist / (baseRadius * chunks[k].size * 2.0f));
+                
+                // Direction of displacement
+                float nx = x / sqrt(x*x + y*y + z*z);
+                float ny = y / sqrt(x*x + y*y + z*z);
+                float nz = z / sqrt(x*x + y*y + z*z);
+                
+                x += nx * influence;
+                y += ny * influence;
+                z += nz * influence;
+                
+                totalDisplacement += influence;
+                maxDisplacement = fmax(maxDisplacement, influence);
+            }
 
-            vertices[idx].x = x * distortion;
-            vertices[idx].y = y * (1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS);
-            vertices[idx].z = z * distortion;
+            // Add surface detail noise
+            float detail = SURFACE_DETAIL_SCALE * baseRadius;
+            float noiseScale = 1.0f - (maxDisplacement / baseRadius);
+            x += ((float)rand() / RAND_MAX - 0.5f) * detail * noiseScale;
+            y += ((float)rand() / RAND_MAX - 0.5f) * detail * noiseScale;
+            z += ((float)rand() / RAND_MAX - 0.5f) * detail * noiseScale;
+
+            vertices[idx].x = x;
+            vertices[idx].y = y;
+            vertices[idx].z = z;
             vertices[idx].u = u;
             vertices[idx].v = v;
-
             idx++;
         }
     }
 
+    // Bottom vertex
     vertices[idx].x = 0;
-    vertices[idx].y = -baseRadius;
+    vertices[idx].y = -baseRadius * (1.0f + ((float)rand() / RAND_MAX - 0.5f) * 0.3f);
     vertices[idx].z = 0;
     vertices[idx].u = 0.5f;
     vertices[idx].v = 1.0f;
@@ -643,6 +703,17 @@ void initFragments(Asteroid* asteroid) {
         f->lifetime = FRAGMENT_LIFETIME;
         f->active = 1;
     }
+}
+
+void updateCollisionRadius(Asteroid* asteroid) {
+    float maxRadius = 0;
+    for (int i = 0; i < asteroid->numVertices; i++) {
+        float distSq = asteroid->vertices[i].x * asteroid->vertices[i].x +
+                      asteroid->vertices[i].y * asteroid->vertices[i].y +
+                      asteroid->vertices[i].z * asteroid->vertices[i].z;
+        maxRadius = fmax(maxRadius, sqrt(distSq));
+    }
+    asteroid->collisionRadius = maxRadius * 1.1f; // Add small buffer for safety
 }
 
 void updateFragments(Asteroid* asteroid) {
@@ -780,6 +851,12 @@ void cleanupAsteroids(void) {
         }
         free(asteroids);
         asteroids = NULL;
+        
+        if (collisionRadii != NULL) {
+            free(collisionRadii);
+            collisionRadii = NULL;
+        }
+        
         asteroidBeltInitialized = 0;
     }
 }
