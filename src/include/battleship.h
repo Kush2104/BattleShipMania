@@ -18,8 +18,8 @@
 #define PITCH_RETURN_SPEED 2.0  
 #define ROLL_RETURN_SPEED 2.0  
 
-#define SHIP_START_X 1000.0f  
-#define SHIP_START_Z 1000.0f 
+#define SHIP_START_X 1500.0f  
+#define SHIP_START_Z 1500.0f 
 
 #define INITIAL_HEALTH 5
 #define SUN_DAMAGE 10        
