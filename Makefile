@@ -1,7 +1,7 @@
 # Platform-specific settings
 ifeq ($(OS),Windows_NT)
     CC = gcc
-    CFLG = -O3 -Wall -DUSEGLEW -I/c/msys64/mingw64/include
+    CFLG = -O3 -Wall -I/c/msys64/mingw64/include
     LIBS = -lfreeglut -lglew32 -lglu32 -lopengl32
     CLEAN = rm -f *.exe ./obj/*.o
 else
