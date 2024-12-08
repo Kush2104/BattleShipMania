@@ -586,6 +586,12 @@ Vertex3D* generateAsteroidVertices(int* numVertices) {
             float x = radius * cos(theta);
             float z = radius * sin(theta);
 
+            if (rand() % 2) {
+                x *= ELONGATION_FACTOR;
+            } else {
+                z *= ELONGATION_FACTOR;
+            }
+
             float distortion = 1.0f + ((float)rand() / RAND_MAX - 0.5f) * SURFACE_ROUGHNESS;
 
             vertices[idx].x = x * distortion;
