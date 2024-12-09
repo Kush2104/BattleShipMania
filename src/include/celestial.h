@@ -3,6 +3,7 @@
 
 #include "utils.h"
 #include "battleship.h"
+#include "shader_util.h"
 
 #define REAL_SUN_RADIUS 696340.0f
 #define REAL_EARTH_RADIUS 6371.0f
@@ -70,6 +71,23 @@
 #define UFO_SPEED_MIN 0.5f
 #define UFO_SPEED_MAX 2.0f
 
+#define MAX_COMET_PARTICLES 100000
+
+typedef struct {
+    float position[4];  // xyz + lifetime
+    float velocity[4];  // xyz + size
+    float color[4];     // rgba
+} CometParticle;
+
+typedef struct {
+    GLuint computeProgram;
+    GLuint particleBuffer;
+    GLuint particleVAO;
+    GLuint particleVBO;
+    CometParticle* particles;
+    float deltaTime;
+} CometTailData;
+
 typedef struct {
     float x, y, z;
     float u, v;
@@ -116,6 +134,7 @@ typedef struct {
     float color[4];
     char* name;
     float specialEffectTimer;
+    CometTailData* tailData;
 } CelestialBody;
 
 typedef struct {
@@ -135,6 +154,9 @@ typedef struct {
 } UFO;
 
 #define MAX_BODIES 20
+
+
+
 
 extern CelestialBody solarBodies[MAX_BODIES];
 extern int bodyCount;
@@ -171,5 +193,10 @@ void renderUFOs(void);
 
 
 void cleanupAsteroids(void);
+
+void initCometTail(CelestialBody* comet);
+void updateCometTail(CelestialBody* comet);
+void drawCometTail(CelestialBody* comet);
+void cleanupCometTail(CelestialBody* comet);
 
 #endif

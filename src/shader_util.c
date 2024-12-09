@@ -10,6 +10,8 @@ void ShaderErrorExit(const char* format, ...) {
 }
 
 char* ReadShaderFile(const char* file) {
+    printf("Opening file: %s\n", file);
+    
     char* buffer;
     FILE* f = fopen(file, "rt");
     if (!f) {
@@ -17,12 +19,13 @@ char* ReadShaderFile(const char* file) {
         return NULL;
     }
 
-    // Get file size
+    printf("File opened successfully\n");
+    
     fseek(f, 0, SEEK_END);
     int n = ftell(f);
+    printf("File size: %d bytes\n", n);
     rewind(f);
 
-    // Allocate memory including space for null terminator
     buffer = (char*)malloc(n + 1);
     if (!buffer) {
         ShaderErrorExit("Cannot allocate %d bytes for shader file %s\n", n + 1, file);
@@ -30,16 +33,21 @@ char* ReadShaderFile(const char* file) {
         return NULL;
     }
 
-    // Read the file
-    if (fread(buffer, n, 1, f) != 1) {
-        printf(buffer);
-        free(buffer);
+    printf("Buffer allocated successfully\n");
+    
+    size_t bytes_read = fread(buffer, 1, n, f);
+    printf("Bytes read: %zu\n", bytes_read);
+    
+    if (bytes_read != n) {
+        printf("Read failed. errno: %d\n", errno);
+        printf("Buffer content: %s\n", buffer);
         ShaderErrorExit("Cannot read %d bytes from shader file %s\n", n, file);
+        free(buffer);
         fclose(f);
         return NULL;
     }
 
-    buffer[n] = 0;  // Null terminate
+    buffer[n] = 0;
     fclose(f);
     return buffer;
 }

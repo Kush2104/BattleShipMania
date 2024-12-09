@@ -34,6 +34,15 @@ int main(int argc, char **argv) {
     glutInitWindowSize(800, 600);
     glutCreateWindow("3D Battleship Flight Sim");
 
+    #ifdef USEGLEW
+        // Initialize GLEW
+        GLenum err = glewInit();
+        if (err != GLEW_OK) {
+            printf("GLEW initialization failed: %s\n", glewGetErrorString(err));
+            return 1;
+        }
+    #endif
+
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);

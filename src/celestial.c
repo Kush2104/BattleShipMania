@@ -174,6 +174,8 @@ void initSolarSystem(void) {
     comet->color[3] = 1.0f;
     comet->name = "Halley's Comet";
     comet->specialEffectTimer = 0;
+    comet->tailData = NULL;
+    initCometTail(comet);
 
     CelestialBody* spaceStation = &solarBodies[bodyCount++];
     spaceStation->originalRadius = REAL_EARTH_RADIUS * 0.002f;
@@ -809,6 +811,7 @@ void drawComet(CelestialBody* comet) {
 
     glTranslatef(comet->x, comet->y, comet->z);
 
+    // Draw the comet core
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
@@ -823,75 +826,11 @@ void drawComet(CelestialBody* comet) {
         glutSolidSphere(comet->radius * glowSizes[i], 20, 20);
     }
 
-    float tailLength = comet->radius * 30.0f;
-    float spreadBase = comet->radius * 0.5f;
-    int numParticles = 500;
-
-    glPointSize(2.0f);
-    glBegin(GL_POINTS);
-
-    for(int i = 0; i < numParticles; i++) {
-        float t = (float)i / numParticles;
-        float spread = spreadBase + (t * comet->radius * 2.0f);
-
-        float x = -tailLength * t;
-
-        float rand1 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-        float rand2 = ((float)rand() / RAND_MAX) * 2.0f - 1.0f;
-        float y = rand1 * spread;
-        float z = rand2 * spread;
-
-        float brightness = 1.0f - (t * 0.8f);
-        float alpha = 1.0f - (t * t);
-
-        if(rand() % 4 == 0) {
-            glColor4f(1.0f, 1.0f, 1.0f, alpha);
-            glPointSize(3.0f);
-        } else {
-            glColor4f(0.8f * brightness, 0.9f * brightness, 1.0f, alpha * 0.5f);
-            glPointSize(2.0f);
-        }
-
-        glVertex3f(x, y, z);
-    }
-    glEnd();
-
-    glBegin(GL_QUAD_STRIP);
-    float streamWidth = comet->radius * 0.5f;
-    float streamLength = tailLength * 0.7f;
-    int segments = 30;
-
-    for(int i = 0; i <= segments; i++) {
-        float t = (float)i / segments;
-        float x = -streamLength * t;
-        float alpha = 1.0f - (t * t);
-
-        glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.5f);
-        glVertex3f(x, streamWidth * (1.0f - t), 0.0f);
-        glVertex3f(x, -streamWidth * (1.0f - t), 0.0f);
-    }
-    glEnd();
-
-    glBegin(GL_LINES);
-    for(int i = 0; i < 50; i++) {
-        float t = (float)rand() / RAND_MAX;
-        float x1 = -tailLength * t;
-        float y1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
-        float z1 = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * comet->radius;
-
-        float length = comet->radius * (1.0f + t);
-        float alpha = 1.0f - t;
-
-        glColor4f(1.0f, 1.0f, 1.0f, alpha * 0.3f);
-        glVertex3f(x1, y1, z1);
-        glVertex3f(x1 - length, y1, z1);
-    }
-    glEnd();
-
-    glEnable(GL_LIGHTING);
-    glDisable(GL_BLEND);
-    glPointSize(1.0f);
     glPopMatrix();
+
+    // Update and draw the compute shader-based tail
+    updateCometTail(comet);
+    drawCometTail(comet);
 }
 
 void drawSpaceStation(CelestialBody* station) {
@@ -1319,5 +1258,134 @@ void renderUFOs(void) {
     
     for (int i = 0; i < NUM_UFOS; i++) {
         drawUFO(&ufos[i]);
+    }
+}
+
+void initCometTail(CelestialBody* comet) {
+    comet->tailData = (CometTailData*)malloc(sizeof(CometTailData));
+    CometTailData* tail = comet->tailData;
+    
+    // Initialize compute shader
+    tail->computeProgram = CreateShaderProgCompute("src/shaders/comet_tail.comp");
+    
+    // Initialize particles
+    tail->particles = (CometParticle*)malloc(MAX_COMET_PARTICLES * sizeof(CometParticle));
+    
+    // Initialize each particle
+    for(int i = 0; i < MAX_COMET_PARTICLES; i++) {
+        for(int j = 0; j < 4; j++) {
+            tail->particles[i].position[j] = 0.0f;
+            tail->particles[i].velocity[j] = 0.0f;
+            tail->particles[i].color[j] = 1.0f;
+        }
+        tail->particles[i].position[3] = 0.0f; // Start with expired lifetime
+    }
+    
+    // Create buffer
+    glGenBuffers(1, &tail->particleBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, tail->particleBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 
+                 MAX_COMET_PARTICLES * sizeof(CometParticle),
+                 tail->particles, 
+                 GL_DYNAMIC_DRAW);
+    
+    // Create VAO for rendering
+    glGenVertexArrays(1, &tail->particleVAO);
+    glBindVertexArray(tail->particleVAO);
+    
+    glGenBuffers(1, &tail->particleVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, tail->particleVBO);
+    glBufferData(GL_ARRAY_BUFFER, 
+                 MAX_COMET_PARTICLES * sizeof(CometParticle),
+                 NULL, 
+                 GL_DYNAMIC_DRAW);
+                 
+    // Position
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(CometParticle), (void*)0);
+    
+    // Velocity/Size
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(CometParticle), 
+                         (void*)(sizeof(float) * 4));
+    
+    // Color
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(CometParticle),
+                         (void*)(sizeof(float) * 8));
+                         
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    
+    tail->deltaTime = 0.016f; // ~60fps
+}
+
+void updateCometTail(CelestialBody* comet) {
+    CometTailData* tail = comet->tailData;
+    
+    // Bind compute shader and buffers
+    glUseProgram(tail->computeProgram);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, tail->particleBuffer);
+    
+    // Update uniforms
+    GLint loc;
+    loc = glGetUniformLocation(tail->computeProgram, "deltaTime");
+    glUniform1f(loc, tail->deltaTime);
+    
+    loc = glGetUniformLocation(tail->computeProgram, "cometPosition");
+    glUniform3f(loc, comet->x, comet->y, comet->z);
+    
+    loc = glGetUniformLocation(tail->computeProgram, "cometRadius");
+    glUniform1f(loc, comet->radius);
+    
+    loc = glGetUniformLocation(tail->computeProgram, "tailLength");
+    glUniform1f(loc, comet->radius * 30.0f);
+    
+    // Dispatch compute shader
+    glDispatchCompute(MAX_COMET_PARTICLES / 256 + 1, 1, 1);
+    
+    // Wait for compute shader to finish
+    glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
+    
+    // Copy data for rendering
+    glBindBuffer(GL_COPY_READ_BUFFER, tail->particleBuffer);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, tail->particleVBO);
+    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 
+                       0, 0, MAX_COMET_PARTICLES * sizeof(CometParticle));
+                       
+    glBindBuffer(GL_COPY_READ_BUFFER, 0);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+}
+
+void drawCometTail(CelestialBody* comet) {
+    CometTailData* tail = comet->tailData;
+    
+    glPushMatrix();
+    glTranslatef(comet->x, comet->y, comet->z);
+    
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    
+    glBindVertexArray(tail->particleVAO);
+    glDrawArrays(GL_POINTS, 0, MAX_COMET_PARTICLES);
+    glBindVertexArray(0);
+    
+    glEnable(GL_LIGHTING);
+    glDisable(GL_BLEND);
+    
+    glPopMatrix();
+}
+
+void cleanupCometTail(CelestialBody* comet) {
+    if (comet->tailData) {
+        glDeleteProgram(comet->tailData->computeProgram);
+        glDeleteBuffers(1, &comet->tailData->particleBuffer);
+        glDeleteBuffers(1, &comet->tailData->particleVBO);
+        glDeleteVertexArrays(1, &comet->tailData->particleVAO);
+        free(comet->tailData->particles);
+        free(comet->tailData);
+        comet->tailData = NULL;
     }
 }
