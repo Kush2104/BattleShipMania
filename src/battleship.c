@@ -877,7 +877,6 @@ void drawBattleship(void) {
     Cube(-0.9, 0.05, 0, 0.2, 0.075, 0.15, 15, 0, 1, 0);  
     Cube(-0.9, -0.025, 0, 0.2, 0.05, 0.2, -10, 0, 1, 0);  
 
-    // Switch to glass texture for window
     glBindTexture(GL_TEXTURE_2D, shipGlassTexture);
     
     GLfloat glass_ambient[] = { 0.2f, 0.3f, 0.4f, 1.0f };
