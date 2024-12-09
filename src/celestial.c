@@ -825,7 +825,7 @@ void drawComet(CelestialBody* comet) {
 
     float tailLength = comet->radius * 30.0f;
     float spreadBase = comet->radius * 0.5f;
-    int numParticles = 500;
+    int numParticles = 10000;
 
     glPointSize(2.0f);
     glBegin(GL_POINTS);
