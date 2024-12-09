@@ -89,6 +89,10 @@ typedef struct {
 extern ShipState shipState;
 extern Bullet bullets[MAX_BULLETS];
 
+extern GLuint shipGlassTexture;
+extern GLuint shipMetalTexture;
+
+
 void SetupCamera(void);
 void drawBattleship(void);
 void DrawBullet(float x, float y, float z);

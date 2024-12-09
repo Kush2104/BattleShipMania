@@ -17,13 +17,7 @@ GLuint LoadBMP(const char* filename) {
 
     unsigned char header[54];
     if (fread(header, sizeof(unsigned char), 54, file) != 54) {
-        printf("Error: Invalid BMP header\n");
-        fclose(file);
-        return 0;
-    }
-
-    if (header[0] != 'B' || header[1] != 'M') {
-        printf("Error: Not a BMP file\n");
+        printf("Error while readin\n");
         fclose(file);
         return 0;
     }
@@ -31,12 +25,6 @@ GLuint LoadBMP(const char* filename) {
     int width = *(int*)&header[18];
     int height = *(int*)&header[22];
     int bpp = *(short*)&header[28];  
-
-    if (bpp != 24) {
-        printf("Error: %s is not a 24-bit BMP file\n", filename);
-        fclose(file);
-        return 0;
-    }
 
     int size = 3 * width * height;
     unsigned char* data = (unsigned char*)malloc(size);
@@ -50,12 +38,6 @@ GLuint LoadBMP(const char* filename) {
     int rowSize = width * 3 + padding;
 
     unsigned char* tempRow = (unsigned char*)malloc(rowSize);
-    if (!tempRow) {
-        printf("Error: Memory allocation failed for temp row\n");
-        free(data);
-        fclose(file);
-        return 0;
-    }
 
     for (int i = height - 1; i >= 0; i--) {
         if (fread(tempRow, 1, rowSize, file) != rowSize) {
@@ -88,11 +70,6 @@ GLuint LoadBMP(const char* filename) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
-        printf("OpenGL Error during texture creation: %d\n", err);
-    }
 
     free(data);
     return texture;
@@ -147,27 +124,38 @@ void Cylinder(double x, double y, double z, double radius, double height) {
     glTranslatef(x, y, z);
     glScalef(radius, height, radius);
 
+    // Bottom
     glBegin(GL_TRIANGLE_FAN);
     glNormal3f(0, -1, 0);
-    glVertex3f(0, 0, 0);
+    glTexCoord2f(0.5f, 0.5f); glVertex3f(0, 0, 0);
     for (int th = 0; th <= 360; th += d) {
-        glVertex3f(Sin(th), 0, Cos(th));
+        float s = sin(th * M_PI/180);
+        float c = cos(th * M_PI/180);
+        glTexCoord2f(0.5f + 0.5f*c, 0.5f + 0.5f*s);
+        glVertex3f(s, 0, c);
     }
     glEnd();
 
+    // Sides
     glBegin(GL_QUAD_STRIP);
     for (int th = 0; th <= 360; th += d) {
-        glNormal3f(Sin(th), 0, Cos(th));
-        glVertex3f(Sin(th), 0, Cos(th));
-        glVertex3f(Sin(th), 1, Cos(th));
+        float s = sin(th * M_PI/180);
+        float c = cos(th * M_PI/180);
+        glNormal3f(s, 0, c);
+        glTexCoord2f(th/360.0f, 0); glVertex3f(s, 0, c);
+        glTexCoord2f(th/360.0f, 1); glVertex3f(s, 1, c);
     }
     glEnd();
 
+    // Top
     glBegin(GL_TRIANGLE_FAN);
     glNormal3f(0, 1, 0);
-    glVertex3f(0, 1, 0);
+    glTexCoord2f(0.5f, 0.5f); glVertex3f(0, 1, 0);
     for (int th = 0; th <= 360; th += d) {
-        glVertex3f(Sin(th), 1, Cos(th));
+        float s = sin(th * M_PI/180);
+        float c = cos(th * M_PI/180);
+        glTexCoord2f(0.5f + 0.5f*c, 0.5f + 0.5f*s);
+        glVertex3f(s, 1, c);
     }
     glEnd();
 
@@ -208,42 +196,47 @@ void Cube(double x, double y, double z, double width, double height, double dept
     glScalef(width, height, depth);
 
     glBegin(GL_QUADS);
-
+    // Front
     glNormal3f(0, 0, 1);
-    glVertex3f(-1, 0, +1);
-    glVertex3f(+1, 0, +1);
-    glVertex3f(+1, +1, +1);
-    glVertex3f(-1, +1, +1);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1, 0, +1);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(+1, 0, +1);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(+1, +1, +1);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1, +1, +1);
 
+    // Back
     glNormal3f(0, 0, -1);
-    glVertex3f(+1, 0, -1);
-    glVertex3f(-1, 0, -1);
-    glVertex3f(-1, +1, -1);
-    glVertex3f(+1, +1, -1);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(+1, 0, -1);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1, 0, -1);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1, +1, -1);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(+1, +1, -1);
 
+    // Right
     glNormal3f(+1, 0, 0);
-    glVertex3f(+1, 0, +1);
-    glVertex3f(+1, 0, -1);
-    glVertex3f(+1, +1, -1);
-    glVertex3f(+1, +1, +1);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(+1, 0, +1);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(+1, 0, -1);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(+1, +1, -1);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(+1, +1, +1);
 
+    // Left
     glNormal3f(-1, 0, 0);
-    glVertex3f(-1, 0, -1);
-    glVertex3f(-1, 0, +1);
-    glVertex3f(-1, +1, +1);
-    glVertex3f(-1, +1, -1);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(-1, 0, -1);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1, 0, +1);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1, +1, +1);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(-1, +1, -1);
 
-    glNormal3f(0, 1, 0);
-    glVertex3f(-1, +1, +1);
-    glVertex3f(+1, +1, +1);
-    glVertex3f(+1, +1, -1);
-    glVertex3f(-1, +1, -1);
+    // Top
+    glNormal3f(0, +1, 0);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1, +1, +1);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(+1, +1, +1);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(+1, +1, -1);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1, +1, -1);
 
+    // Bottom
     glNormal3f(0, -1, 0);
-    glVertex3f(-1, 0, -1);
-    glVertex3f(+1, 0, -1);
-    glVertex3f(+1, 0, +1);
-    glVertex3f(-1, 0, +1);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1, 0, -1);
+    glTexCoord2f(1.0f, 0.0f); glVertex3f(+1, 0, -1);
+    glTexCoord2f(1.0f, 1.0f); glVertex3f(+1, 0, +1);
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1, 0, +1);
     glEnd();
 
     glPopMatrix();

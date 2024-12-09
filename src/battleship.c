@@ -16,6 +16,8 @@ ShipState shipState = {
 
 ShipHealth shipHealth;
 int gameOver = 0;
+GLuint shipGlassTexture = 0;
+GLuint shipMetalTexture = 0;
 
 void initializeShipHealth(void) {
     shipHealth.health = INITIAL_HEALTH;
@@ -29,6 +31,9 @@ void initializeShipHealth(void) {
     shipState.yaw = 45;
     shipState.pitch = 0;
     shipState.roll = 0;
+
+    shipGlassTexture = LoadBMP("src/assets/textures/glass.bmp");
+    shipMetalTexture = LoadBMP("src/assets/textures/metal.bmp");
 }
 
 void damageShip(int damage) {
@@ -510,6 +515,15 @@ void cleanupShipHealth(void) {
     shipHealth.explosionStage = 0;
     shipHealth.shockwaveSize = 0;
     shipHealth.explosionFlashTime = 0;
+
+    if (shipMetalTexture) {
+        glDeleteTextures(1, &shipMetalTexture);
+        shipMetalTexture = 0;
+    }
+    if (shipGlassTexture) {
+        glDeleteTextures(1, &shipGlassTexture);
+        shipGlassTexture = 0;
+    }
 }
 
 void resetShipPosition(void) {
@@ -531,10 +545,7 @@ void resetGame(void) {
 
     resetShipPosition();
 
-    shipHealth.health = INITIAL_HEALTH;
-    shipHealth.isExploding = 0;
-    shipHealth.invulnerabilityFrames = 0;
-    shipHealth.explosionTimer = 0;
+    initializeShipHealth();
 
     gameOver = 0;
 }
@@ -849,6 +860,12 @@ void drawBattleship(void) {
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
+    // Enable metal texture
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, shipMetalTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
     glColor3f(0.7, 0.72, 0.75);
     GLfloat fuselage_spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, fuselage_spec);
@@ -860,6 +877,9 @@ void drawBattleship(void) {
     Cube(-0.9, 0.05, 0, 0.2, 0.075, 0.15, 15, 0, 1, 0);  
     Cube(-0.9, -0.025, 0, 0.2, 0.05, 0.2, -10, 0, 1, 0);  
 
+    // Switch to glass texture for window
+    glBindTexture(GL_TEXTURE_2D, shipGlassTexture);
+    
     GLfloat glass_ambient[] = { 0.2f, 0.3f, 0.4f, 1.0f };
     GLfloat glass_diffuse[] = { 0.4f, 0.7f, 0.9f, 0.8f };
     GLfloat glass_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -872,8 +892,13 @@ void drawBattleship(void) {
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    Cube(-0.5, 0.1, 0, 0.3, 0.05, 0.15, 5, 0, 1, 0);  
+    
+    Cube(-0.5, 0.1, 0, 0.3, 0.05, 0.15, 5, 0, 1, 0);
+    
     glDisable(GL_BLEND);
+
+    // Switch back to metal texture
+    glBindTexture(GL_TEXTURE_2D, shipMetalTexture);
 
     glColor3f(0.68, 0.7, 0.73);
     GLfloat wing_spec[] = { 0.6f, 0.6f, 0.6f, 1.0f };
@@ -882,7 +907,6 @@ void drawBattleship(void) {
     glMaterialfv(GL_FRONT, GL_SHININESS, wing_shininess);
 
     Cube(-0.1, 0, -0.6, 0.6, 0.04, 0.4, 10, 0, 1, 0);
-
     Cube(-0.1, 0, 0.6, 0.6, 0.04, 0.4, -10, 0, 1, 0);
 
     glColor3f(0.75, 0.77, 0.8);
@@ -890,7 +914,6 @@ void drawBattleship(void) {
     glMaterialfv(GL_FRONT, GL_SPECULAR, tip_spec);
 
     Cube(-0.1, 0.1, -0.8, 0.2, 0.15, 0.04, 60, 0, 0, 1);
-
     Cube(-0.1, 0.1, 0.8, 0.2, 0.15, 0.04, -60, 0, 0, 1);
 
     glColor3f(0.72, 0.74, 0.77);
@@ -900,6 +923,8 @@ void drawBattleship(void) {
 
     Cube(0.6, 0, -0.4, 0.3, 0.04, 0.2, 15, 1, 0, 0);  
     Cube(0.6, 0, 0.4, 0.3, 0.04, 0.2, -15, 1, 0, 0);  
+
+    glDisable(GL_TEXTURE_2D);
 
     glColor3f(0.45, 0.47, 0.5);
     GLfloat engine_spec[] = { 0.9f, 0.9f, 0.9f, 1.0f };
