@@ -3,9 +3,9 @@
 layout(local_size_x = 256) in;
 
 struct Particle {
-    vec4 position;  // w component can be used for lifetime
-    vec4 velocity;  // w component can be used for size
-    vec4 color;     // w component used for alpha
+    vec4 position;  
+    vec4 velocity;  
+    vec4 color;
 };
 
 layout(std430, binding = 0) buffer ParticleBuffer {
@@ -17,7 +17,6 @@ uniform vec3 cometPosition;
 uniform float cometRadius;
 uniform float tailLength;
 
-// Random number generator
 float rand(vec2 co) {
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
@@ -28,12 +27,9 @@ void main() {
 
     Particle particle = particles[gid];
     
-    // Update particle lifetime
     particle.position.w -= deltaTime;
     
-    // Reset dead particles
     if(particle.position.w <= 0.0) {
-        // Initialize at comet position
         float angle = rand(vec2(gid, deltaTime)) * 2.0 * 3.14159;
         float dist = rand(vec2(deltaTime, gid)) * cometRadius;
         
@@ -42,9 +38,8 @@ void main() {
             rand(vec2(gid, gid)) * dist - dist/2.0,
             sin(angle) * dist
         );
-        particle.position.w = 1.0; // Reset lifetime
+        particle.position.w = 1.0; 
         
-        // Set initial velocity
         float speed = mix(10.0, 20.0, rand(vec2(gid, particle.position.x)));
         particle.velocity.xyz = normalize(vec3(-1.0, 0.0, 0.0)) * speed;
         particle.velocity.xyz += vec3(
@@ -53,19 +48,15 @@ void main() {
             rand(vec2(gid, gid)) - 0.5
         ) * 5.0;
         
-        // Set size and color
-        particle.velocity.w = mix(0.5, 2.0, rand(vec2(gid, speed))); // Size
+        particle.velocity.w = mix(0.5, 2.0, rand(vec2(gid, speed))); 
         particle.color = vec4(1.0, 0.95, 0.8, 1.0);
     }
     
-    // Update position
     particle.position.xyz += particle.velocity.xyz * deltaTime;
     
-    // Fade out based on distance from comet and lifetime
     float distFromComet = length(particle.position.xyz - cometPosition);
     float fadeDistance = tailLength;
     particle.color.a = smoothstep(fadeDistance, 0.0, distFromComet) * (particle.position.w);
     
-    // Store updated particle
     particles[gid] = particle;
 }
