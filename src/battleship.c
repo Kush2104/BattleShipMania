@@ -80,7 +80,7 @@ void createShipExplosion(void) {
         float elevation;
         float speed;
 
-        if (i < MUSHROOM_CLOUD_PARTICLES) {
+        if (i < EXPLOSION_PARTICLES) {
 
             elevation = ((float)rand() / RAND_MAX) * M_PI * 0.25f + M_PI * 0.25f;
             speed = 10.0f + ((float)rand() / RAND_MAX) * 20.0f;
@@ -143,7 +143,7 @@ void updateShipExplosion(void) {
         p->y += p->vy * 0.3f;
         p->z += p->vz * 0.3f;
 
-        if (i < MUSHROOM_CLOUD_PARTICLES && p->y > shipState.y + 10.0f) {
+        if (i < EXPLOSION_PARTICLES && p->y > shipState.y + 10.0f) {
             float dx = p->x - shipState.x;
             float dz = p->z - shipState.z;
             float dist = sqrt(dx * dx + dz * dz);
@@ -233,7 +233,7 @@ void drawShipExplosion(void) {
 
         glColor4f(p->r, p->g, p->b, p->a);
 
-        float size = p->size * (1.0f + (float)(i < MUSHROOM_CLOUD_PARTICLES) * 0.5f);
+        float size = p->size * (1.0f + (float)(i < EXPLOSION_PARTICLES) * 0.5f);
 
         glBegin(GL_TRIANGLE_FAN);
         glVertex3f(0, 0, 0);  
@@ -325,7 +325,7 @@ void checkShipCollisions(void) {
                 break;
 
             case CELESTIAL_COMET:
-
+            {
                 float cometHeadRadius = body->radius;
                 float tailLength = body->radius * 30.0f; 
 
@@ -347,7 +347,7 @@ void checkShipCollisions(void) {
                     printf("Ship collided with comet tail! Distance: %f\n", sqrt(distSq));
                 }
                 continue;
-
+            }
             default:
                 continue; 
         }
@@ -553,44 +553,36 @@ void resetGame(void) {
 void DrawBullet(float x, float y, float z) {
     glPushMatrix();
     glTranslatef(x, y, z);
-    
-    // Disable lighting for full brightness
+
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
-    
-    // Core of the bullet - bright orange/yellow
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);  // Additive blending for glow
-    
-    // Inner core - brightest
-    glColor4f(1.0, 1.0, 0.3, 1.0);  // Bright yellow
+
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);  
+
+    glColor4f(1.0, 1.0, 0.3, 1.0);  
     Sphere(0, 0, 0, 0.04);
-    
-    // Middle layer - orange
+
     glColor4f(1.0, 0.6, 0.0, 0.8);
     Sphere(0, 0, 0, 0.06);
-    
-    // Outer glow - larger radius
+
     glColor4f(1.0, 0.3, 0.0, 0.4);
     Sphere(0, 0, 0, 0.08);
-    
-    // Additional glow effects
+
     glBegin(GL_QUADS);
-    // Horizontal glow
+
     float glowSize = 0.2f;
     glColor4f(1.0, 0.3, 0.0, 0.3);
     glVertex3f(-glowSize, 0.0f, -0.02f);
     glVertex3f(glowSize, 0.0f, -0.02f);
     glVertex3f(glowSize, 0.0f, 0.02f);
     glVertex3f(-glowSize, 0.0f, 0.02f);
-    
-    // Vertical glow
+
     glVertex3f(-0.02f, -glowSize, 0.0f);
     glVertex3f(0.02f, -glowSize, 0.0f);
     glVertex3f(0.02f, glowSize, 0.0f);
     glVertex3f(-0.02f, glowSize, 0.0f);
     glEnd();
-    
-    // Trail effect
+
     glBegin(GL_TRIANGLES);
     glColor4f(1.0, 0.6, 0.0, 0.6);
     glVertex3f(0.0f, 0.0f, 0.0f);
@@ -598,8 +590,7 @@ void DrawBullet(float x, float y, float z) {
     glVertex3f(-0.3f, 0.08f, 0.0f);
     glVertex3f(-0.3f, -0.08f, 0.0f);
     glEnd();
-    
-    // Enable lighting back
+
     glEnable(GL_LIGHTING);
     glDisable(GL_BLEND);
     glPopMatrix();
@@ -860,12 +851,11 @@ void drawBattleship(void) {
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
-    // Enable metal texture
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, shipMetalTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
+
     glColor3f(0.7, 0.72, 0.75);
     GLfloat fuselage_spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     glMaterialfv(GL_FRONT, GL_SPECULAR, fuselage_spec);
@@ -878,7 +868,7 @@ void drawBattleship(void) {
     Cube(-0.9, -0.025, 0, 0.2, 0.05, 0.2, -10, 0, 1, 0);  
 
     glBindTexture(GL_TEXTURE_2D, shipGlassTexture);
-    
+
     GLfloat glass_ambient[] = { 0.2f, 0.3f, 0.4f, 1.0f };
     GLfloat glass_diffuse[] = { 0.4f, 0.7f, 0.9f, 0.8f };
     GLfloat glass_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -891,12 +881,11 @@ void drawBattleship(void) {
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
+
     Cube(-0.5, 0.1, 0, 0.3, 0.05, 0.15, 5, 0, 1, 0);
-    
+
     glDisable(GL_BLEND);
 
-    // Switch back to metal texture
     glBindTexture(GL_TEXTURE_2D, shipMetalTexture);
 
     glColor3f(0.68, 0.7, 0.73);

@@ -35,7 +35,7 @@
 #define INITIAL_EXPLOSION_SIZE 4.0f     
 #define EXPLOSION_SPREAD 20.0f          
 #define SHOCKWAVE_COUNT 3              
-#define MUSHROOM_CLOUD_PARTICLES 400
+#define EXPLOSION_PARTICLES 400
 
 #define ENGINE_BASE_GLOW 0.2f          
 #define ENGINE_MAX_GLOW 1.0f           
@@ -91,7 +91,6 @@ extern Bullet bullets[MAX_BULLETS];
 
 extern GLuint shipGlassTexture;
 extern GLuint shipMetalTexture;
-
 
 void SetupCamera(void);
 void drawBattleship(void);

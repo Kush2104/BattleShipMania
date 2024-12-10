@@ -8,7 +8,6 @@ int asteroidBeltInitialized = 0;
 UFO* ufos = NULL;
 int ufoInitialized = 0;
 
-
 static GLuint asteroidTexture = 0;
 static GLuint earthTexture = 0;
 static GLuint marsTexture = 0;
@@ -29,8 +28,8 @@ void initSolarSystem(void) {
     bodyCount = 0;
 
     CelestialBody* sun = &solarBodies[bodyCount++];
-    sun->originalRadius = REAL_SUN_RADIUS;
-    sun->radius = getScaledRadius(REAL_SUN_RADIUS);
+    sun->originalRadius = SUN_RADIUS;
+    sun->radius = getScaledRadius(SUN_RADIUS);
     sun->x = sun->y = sun->z = 0;
     sun->rotationSpeed = 0.1f;
     sun->currentRotation = 0;
@@ -54,7 +53,7 @@ void initSolarSystem(void) {
     ufoDomeTexture = LoadBMP("src/assets/textures/glass.bmp");
 
     CelestialBody* mercury = &solarBodies[bodyCount++];
-    mercury->originalRadius = REAL_EARTH_RADIUS * 0.383f;
+    mercury->originalRadius = EARTH_RADIUS * 0.383f;
     mercury->radius = 20.0f;
     mercury->orbitRadius = 500.0f;
     mercury->orbitSpeed = 0.02f;
@@ -66,7 +65,7 @@ void initSolarSystem(void) {
     mercury->name = "Mercury";
 
     CelestialBody* venus = &solarBodies[bodyCount++];
-    venus->originalRadius = REAL_EARTH_RADIUS * 0.949f;
+    venus->originalRadius = EARTH_RADIUS * 0.949f;
     venus->radius = 25.0f;
     venus->orbitRadius = 1000.0f;
     venus->orbitSpeed = 0.015f;
@@ -78,7 +77,7 @@ void initSolarSystem(void) {
     venus->name = "Venus";
 
     CelestialBody* earth = &solarBodies[bodyCount++];
-    earth->originalRadius = REAL_EARTH_RADIUS;
+    earth->originalRadius = EARTH_RADIUS;
     earth->radius = 30.0f;
     earth->orbitRadius = 1500.0f;
     earth->orbitSpeed = 0.01f;
@@ -90,7 +89,7 @@ void initSolarSystem(void) {
     earth->name = "Earth";
 
     CelestialBody* mars = &solarBodies[bodyCount++];
-    mars->originalRadius = REAL_EARTH_RADIUS * 0.532f;
+    mars->originalRadius = EARTH_RADIUS * 0.532f;
     mars->radius = 22.0f;
     mars->orbitRadius = 1800.0f;
     mars->orbitSpeed = 0.008f;
@@ -102,7 +101,7 @@ void initSolarSystem(void) {
     mars->name = "Mars";
 
     CelestialBody* jupiter = &solarBodies[bodyCount++];
-    jupiter->originalRadius = REAL_JUPITER_RADIUS;
+    jupiter->originalRadius = JUPITER_RADIUS;
     jupiter->radius = 80.0f;
     jupiter->orbitRadius = 2500.0f;
     jupiter->orbitSpeed = 0.005f;
@@ -114,7 +113,7 @@ void initSolarSystem(void) {
     jupiter->name = "Jupiter";
 
     CelestialBody* saturn = &solarBodies[bodyCount++];
-    saturn->originalRadius = REAL_SATURN_RADIUS;
+    saturn->originalRadius = SATURN_RADIUS;
     saturn->radius = 70.0f;
     saturn->orbitRadius = 3000.0f;
     saturn->orbitSpeed = 0.003f;
@@ -126,7 +125,7 @@ void initSolarSystem(void) {
     saturn->name = "Saturn";
 
     CelestialBody* uranus = &solarBodies[bodyCount++];
-    uranus->originalRadius = REAL_URANUS_RADIUS;
+    uranus->originalRadius = URANUS_RADIUS;
     uranus->radius = 45.0f;
     uranus->orbitRadius = 3500.0f;
     uranus->orbitSpeed = 0.002f;
@@ -138,7 +137,7 @@ void initSolarSystem(void) {
     uranus->name = "Uranus";
 
     CelestialBody* neptune = &solarBodies[bodyCount++];
-    neptune->originalRadius = REAL_NEPTUNE_RADIUS;
+    neptune->originalRadius = NEPTUNE_RADIUS;
     neptune->radius = 43.0f;
     neptune->orbitRadius = 4000.0f;
     neptune->orbitSpeed = 0.001f;
@@ -150,9 +149,9 @@ void initSolarSystem(void) {
     neptune->name = "Neptune";
 
     CelestialBody* asteroidBelt = &solarBodies[bodyCount++];
-    asteroidBelt->originalRadius = REAL_EARTH_ORBIT * 1.2f;
-    asteroidBelt->radius = getScaledDistance(REAL_EARTH_ORBIT * 1.2f);
-    asteroidBelt->orbitRadius = getScaledDistance(REAL_EARTH_ORBIT * 1.2f);
+    asteroidBelt->originalRadius = EARTH_ORBIT * 1.2f;
+    asteroidBelt->radius = getScaledDistance(EARTH_ORBIT * 1.2f);
+    asteroidBelt->orbitRadius = getScaledDistance(EARTH_ORBIT * 1.2f);
     asteroidBelt->x = asteroidBelt->y = asteroidBelt->z = 0;
     asteroidBelt->rotationSpeed = 0.05f;
     asteroidBelt->currentRotation = 0;
@@ -162,7 +161,7 @@ void initSolarSystem(void) {
     asteroidBelt->name = "Asteroid Belt";
 
     CelestialBody* comet = &solarBodies[bodyCount++];
-    comet->originalRadius = REAL_EARTH_RADIUS * 0.2f;
+    comet->originalRadius = EARTH_RADIUS * 0.2f;
     comet->radius = 25.0f;
     comet->orbitRadius = 3000.0f;
     comet->orbitSpeed = 0.05f;
@@ -176,7 +175,7 @@ void initSolarSystem(void) {
     comet->specialEffectTimer = 0;
 
     CelestialBody* spaceStation = &solarBodies[bodyCount++];
-    spaceStation->originalRadius = REAL_EARTH_RADIUS * 0.002f;
+    spaceStation->originalRadius = EARTH_RADIUS * 0.002f;
     spaceStation->radius = 5.0f;
     spaceStation->rotationSpeed = 0.5f;
     spaceStation->currentRotation = 0;
@@ -990,26 +989,24 @@ void drawSpaceStation(CelestialBody* station) {
 void initUFOs(void) {
     if (!ufoInitialized) {
         ufos = (UFO*)malloc(sizeof(UFO) * NUM_UFOS);
-        
+
         for (int i = 0; i < NUM_UFOS; i++) {
             UFO* ufo = &ufos[i];
-            
-            // Set initial position closer to the ship's starting position
+
             float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
-            float distance = 500.0f + ((float)rand() / RAND_MAX) * 1000.0f; // Between 500 and 1500 units
-            
+            float distance = 500.0f + ((float)rand() / RAND_MAX) * 1000.0f; 
+
             ufo->radius = UFO_MIN_RADIUS + ((float)rand() / RAND_MAX) * (UFO_MAX_RADIUS - UFO_MIN_RADIUS);
             ufo->height = UFO_MIN_HEIGHT + ((float)rand() / RAND_MAX) * (UFO_MAX_HEIGHT - UFO_MIN_HEIGHT);
             ufo->rotation = ((float)rand() / RAND_MAX) * 360.0f;
-            ufo->rotationSpeed = 0.5f + ((float)rand() / RAND_MAX); // Make rotation more noticeable
-            
-            // Set initial position relative to ship start position
+            ufo->rotationSpeed = 0.5f + ((float)rand() / RAND_MAX); 
+
             ufo->orbitRadius = distance;
             ufo->orbitAngle = angle;
             ufo->x = SHIP_START_X + cos(angle) * distance;
-            ufo->y = ((float)rand() / RAND_MAX) * 200.0f - 100.0f; // Random height between -100 and 100
+            ufo->y = ((float)rand() / RAND_MAX) * 200.0f - 100.0f; 
             ufo->z = SHIP_START_Z + sin(angle) * distance;
-            
+
             ufo->orbitSpeed = (UFO_SPEED_MIN + ((float)rand() / RAND_MAX) * (UFO_SPEED_MAX - UFO_SPEED_MIN)) * 0.01f;
             ufo->active = 1;
             ufo->health = MAX_HEALTH;
@@ -1020,7 +1017,6 @@ void initUFOs(void) {
     }
 }
 
-// Update the updateUFOs() function to make movement more noticeable:
 void updateUFOs(void) {
     for (int i = 0; i < NUM_UFOS; i++) {
         UFO* ufo = &ufos[i];
@@ -1029,17 +1025,15 @@ void updateUFOs(void) {
         ufo->rotation += ufo->rotationSpeed;
         ufo->orbitAngle += ufo->orbitSpeed;
 
-        // Make UFOs orbit around their initial positions
         float baseX = SHIP_START_X + cos(ufo->orbitAngle * 0.1f) * ufo->orbitRadius;
         float baseZ = SHIP_START_Z + sin(ufo->orbitAngle * 0.1f) * ufo->orbitRadius;
-        
-        // Add a smaller circular motion to make movement more interesting
+
         float secondaryRadius = 100.0f;
         float secondaryAngle = ufo->orbitAngle * 2.0f;
-        
+
         ufo->x = baseX + cos(secondaryAngle) * secondaryRadius;
-        ufo->y += sin(ufo->orbitAngle * 3.0f) * 0.5f; // Gentle vertical bobbing
-        ufo->y = fmax(-100, fmin(100, ufo->y)); // Keep height within bounds
+        ufo->y += sin(ufo->orbitAngle * 3.0f) * 0.5f; 
+        ufo->y = fmax(-100, fmin(100, ufo->y)); 
         ufo->z = baseZ + sin(secondaryAngle) * secondaryRadius;
     }
 }
@@ -1051,11 +1045,11 @@ void UFODome(double radius, int slices, int stacks) {
             for (int k = 0; k <= 1; ++k) {
                 double phi = (i + k) * M_PI / (2 * stacks);
                 double theta = j * 2.0 * M_PI / slices;
-                
+
                 double x = radius * cos(theta) * sin(phi);
                 double y = radius * cos(phi);
                 double z = radius * sin(theta) * sin(phi);
-                
+
                 glNormal3d(x/radius, y/radius, z/radius);
                 glTexCoord2f(theta / (2 * M_PI), phi / M_PI);
                 glVertex3d(x, y, z);
@@ -1072,13 +1066,11 @@ void drawUFO(UFO* ufo) {
     glTranslatef(ufo->x, ufo->y, ufo->z);
     glRotatef(ufo->rotation, 0, 1, 0);
 
-    // Ensure proper texture and material state
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  // Reset color to white
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);  
 
-    // Material properties
     GLfloat mat_ambient[] = { 0.4f, 0.4f, 0.4f, 1.0f };
     GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
     GLfloat mat_specular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
@@ -1089,49 +1081,46 @@ void drawUFO(UFO* ufo) {
     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
     glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
-    // Ensure texture parameters are set for each UFO
     glBindTexture(GL_TEXTURE_2D, ufoBaseTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // Draw the main bottom disk with ridges
     const int NUM_RIDGES = 12;
     float ridgeHeight = ufo->height * 0.1f;
-    
+
     glBegin(GL_TRIANGLE_STRIP);
     for (int i = 0; i <= 36; ++i) {
         float angle = i * (2.0 * M_PI / 36);
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
-        
+
         float ridge = (i % (36/NUM_RIDGES) == 0) ? ridgeHeight : 0.0f;
-        
+
         glNormal3f(cos_angle, -0.2f, sin_angle);
         glTexCoord2f((float)i / 36, 0);
         glVertex3f(ufo->radius * cos_angle, ridge, ufo->radius * sin_angle);
-        
+
         float innerRadius = ufo->radius * 0.8f;
         glTexCoord2f((float)i / 36, 1);
         glVertex3f(innerRadius * cos_angle, 0, innerRadius * sin_angle);
     }
     glEnd();
 
-    // Add rotating ring around the base
     static float ringRotation = 0;
     ringRotation += 0.5f;
-    
+
     glPushMatrix();
     glRotatef(ringRotation, 0, 1, 0);
-    
+
     glBegin(GL_QUAD_STRIP);
     for (int i = 0; i <= 36; ++i) {
         float angle = i * (2.0 * M_PI / 36);
         float cos_angle = cos(angle);
         float sin_angle = sin(angle);
         float ringWidth = ufo->radius * 1.1f;
-        
+
         glNormal3f(cos_angle, 0.0f, sin_angle);
         glTexCoord2f((float)i / 36, 0);
         glVertex3f(ringWidth * cos_angle, ufo->height * 0.15f, ringWidth * sin_angle);
@@ -1141,20 +1130,19 @@ void drawUFO(UFO* ufo) {
     glEnd();
     glPopMatrix();
 
-    // Add detailed mid-section with panels
     const int NUM_PANELS = 8;
     float panelWidth = 2.0f * M_PI / NUM_PANELS;
-    
+
     glBegin(GL_QUADS);
     for (int i = 0; i < NUM_PANELS; ++i) {
         float startAngle = i * panelWidth;
         float endAngle = startAngle + panelWidth * 0.8f;
-        
+
         float cos_start = cos(startAngle);
         float sin_start = sin(startAngle);
         float cos_end = cos(endAngle);
         float sin_end = sin(endAngle);
-        
+
         glNormal3f(cos_start, 0.2f, sin_start);
         glTexCoord2f(0, 0);
         glVertex3f(ufo->radius * cos_start, ufo->height * 0.2f, ufo->radius * sin_start);
@@ -1167,15 +1155,13 @@ void drawUFO(UFO* ufo) {
     }
     glEnd();
 
-    // Draw dome with glass texture
     glBindTexture(GL_TEXTURE_2D, ufoDomeTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
-    // Set material properties for glass
+
     GLfloat glass_ambient[] = { 0.4f, 0.4f, 0.4f, 0.6f };
     GLfloat glass_diffuse[] = { 0.8f, 0.8f, 0.8f, 0.6f };
     GLfloat glass_specular[] = { 1.0f, 1.0f, 1.0f, 0.8f };
@@ -1187,36 +1173,31 @@ void drawUFO(UFO* ufo) {
     glMaterialfv(GL_FRONT, GL_SHININESS, glass_shininess);
 
     glTranslatef(0.0, ufo->height * 0.3f, 0.0);
-    
-    // Draw layered dome with internal structure
+
     const int stacks = 20;
     const int slices = 36;
     float dome_radius = ufo->radius * 0.7f;
     float dome_height = ufo->height * 0.7f;
-    
-    // Inner dome
+
     glPushMatrix();
     glScalef(0.9f, 0.9f, 0.9f);
     UFODome(dome_radius, slices, stacks);
     glPopMatrix();
-    
-    // Outer dome
+
     UFODome(dome_radius, slices, stacks);
 
-    // Add support struts
     glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);  // Disable texturing for struts
-    
-    // Save current color
+    glDisable(GL_TEXTURE_2D);  
+
     GLfloat currentColor[4];
     glGetFloatv(GL_CURRENT_COLOR, currentColor);
-    
+
     glColor4f(0.7f, 0.7f, 0.7f, 1.0f);
-    
+
     for (int i = 0; i < 6; ++i) {
         glPushMatrix();
         glRotatef(i * 60, 0, 1, 0);
-        
+
         glBegin(GL_QUADS);
         float strutWidth = dome_radius * 0.05f;
         glVertex3f(-strutWidth, 0, 0);
@@ -1224,40 +1205,38 @@ void drawUFO(UFO* ufo) {
         glVertex3f(strutWidth, dome_height * 0.8f, 0);
         glVertex3f(-strutWidth, dome_height * 0.8f, 0);
         glEnd();
-        
+
         glPopMatrix();
     }
 
-    // Add pulsing lights around the base
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-    
+
     float pulseIntensity = (sin(glutGet(GLUT_ELAPSED_TIME) * 0.003f) + 1.0f) * 0.5f;
-    
+
     for (int i = 0; i < NUM_PANELS; ++i) {
         float angle = i * (2.0f * M_PI / NUM_PANELS);
         float x = ufo->radius * 1.05f * cos(angle);
         float z = ufo->radius * 1.05f * sin(angle);
-        
+
         glPushMatrix();
         glTranslatef(x, -ufo->height * 0.2f, z);
-        
+
         glColor4f(0.2f, 0.8f, 1.0f, pulseIntensity * 0.6f);
         glutSolidSphere(ufo->radius * 0.05f, 8, 8);
-        
+
         glColor4f(0.2f, 0.8f, 1.0f, pulseIntensity * 0.3f);
         glutSolidSphere(ufo->radius * 0.08f, 8, 8);
-        
+
         glPopMatrix();
     }
 
-    // Restore previous state
     glColor4fv(currentColor);
     glDisable(GL_BLEND);
     glDisable(GL_COLOR_MATERIAL);
     glEnable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
-    
+
     glPopMatrix();
 
     if (ufo->fragmentsActive) {
@@ -1287,7 +1266,7 @@ void checkBulletUFOCollisions(void) {
 
                 if (ufos[j].health <= 0) {
                     ufos[j].active = 0;
-                    initFragments((Asteroid*)&ufos[j]); // Reuse asteroid explosion
+                    initFragments((Asteroid*)&ufos[j]); 
                 }
                 break;
             }
@@ -1300,8 +1279,7 @@ void cleanupUFOs(void) {
         free(ufos);
         ufos = NULL;
         ufoInitialized = 0;
-        
-        // Delete textures
+
         if (ufoBaseTexture) {
             glDeleteTextures(1, &ufoBaseTexture);
             ufoBaseTexture = 0;
@@ -1313,10 +1291,9 @@ void cleanupUFOs(void) {
     }
 }
 
-
 void renderUFOs(void) {
     if (!ufoInitialized || ufos == NULL) return;
-    
+
     for (int i = 0; i < NUM_UFOS; i++) {
         drawUFO(&ufos[i]);
     }

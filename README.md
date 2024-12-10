@@ -65,3 +65,20 @@
    - Automated enemy spaceships that will:
      - Navigate the environment.
      - Shoot at the player's battleship, adding challenge and interaction.
+
+
+## Code references
+
+1. In SetupCamera code in battleship.c, AI was used to arrive at the conclusion for lines:
+
+   `float shipRad = -shipState.yaw * M_PI / 180.0f;`
+   `float pitchRad = shipState.pitch * M_PI / 180.0f;` since I was not able to get the reverse movement of the environment around the ship to work.
+
+2. updateUFOs has the random movement of the UFO which was taken and modified from AI to add a special random effect.
+
+3. Most knowledge was taken from https://learnopengl.com/
+
+4. The shapes utiltiy functions in utils.c and the LoadBMP function in utils.c was taken from the assignments we did in class.
+
+5. The planets code was referred to but not copied from CSCIx229 Ex. 19
+
