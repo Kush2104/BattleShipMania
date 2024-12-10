@@ -638,7 +638,7 @@ void initFragments(Asteroid* asteroid) {
 
         float angle = ((float)rand() / RAND_MAX) * 2 * M_PI;
         float elevation = ((float)rand() / RAND_MAX - 0.5f) * M_PI;
-        float speed = 5.0f + ((float)rand() / RAND_MAX) * 7.0f;  
+        float speed = 1.0f + ((float)rand() / RAND_MAX) * 2.0f;  
 
         f->vx = speed * cos(angle) * cos(elevation);
         f->vy = speed * sin(elevation);

@@ -69,7 +69,6 @@ void createShipExplosion(void) {
         sizeof(ExplosionParticle) * EXPLOSION_PARTICLE_COUNT);
 
     if (!shipHealth.explosionParticles) {
-        printf("Failed to allocate explosion particles!\n");
         return;
     }
 
@@ -290,7 +289,6 @@ void checkShipCollisions(void) {
 
             if (distSq < (collisionDistance * collisionDistance)) {
                 damageShip(ASTEROID_DAMAGE);
-                printf("Ship collided with asteroid! Distance: %f\n", sqrt(distSq));
                 break;
             }
         }
@@ -331,7 +329,6 @@ void checkShipCollisions(void) {
 
                 if (distSq < (cometHeadRadius * cometHeadRadius)) {
                     damageShip(COMET_DAMAGE);
-                    printf("Ship collided with comet head! Distance: %f\n", sqrt(distSq));
                     continue;
                 }
 
@@ -344,7 +341,6 @@ void checkShipCollisions(void) {
                     distSq < (tailLength * tailLength) &&
                     distSq > (cometHeadRadius * cometHeadRadius)) {
                     damageShip(COMET_DAMAGE/2); 
-                    printf("Ship collided with comet tail! Distance: %f\n", sqrt(distSq));
                 }
                 continue;
             }
@@ -354,17 +350,13 @@ void checkShipCollisions(void) {
 
         if (damage > 0 && distSq < (collisionRadius * collisionRadius)) {
             damageShip(damage);
-            const char* bodyType;
-            switch(body->type) {
-                case CELESTIAL_SUN: bodyType = "sun"; break;
-                case CELESTIAL_PLANET: bodyType = "planet"; break;
-                case CELESTIAL_SPACE_STATION: bodyType = "space station"; break;
-                default: bodyType = "unknown"; break;
-            }
-            printf("Ship collided with %s (%s)! Distance: %f\n", 
-                   body->name ? body->name : "unnamed",
-                   bodyType,
-                   sqrt(distSq));
+            // const char* bodyType;
+            // switch(body->type) {
+            //     case CELESTIAL_SUN: bodyType = "sun"; break;
+            //     case CELESTIAL_PLANET: bodyType = "planet"; break;
+            //     case CELESTIAL_SPACE_STATION: bodyType = "space station"; break;
+            //     default: bodyType = "unknown"; break;
+            // }
 
             switch(body->type) {
                 case CELESTIAL_SUN:
@@ -960,7 +952,5 @@ void SetupCamera(void) {
     float camY = shipState.y + camHeight * cos(pitchRad) - camDist * sin(pitchRad);
     float camZ = shipState.z - camDist * sin(shipRad);
 
-    gluLookAt(camX, camY, camZ,                    
-              shipState.x, shipState.y, shipState.z,
-              0, 1, 0);                            
+    gluLookAt(camX, camY, camZ, shipState.x, shipState.y, shipState.z, 0, 1, 0);                            
 }
